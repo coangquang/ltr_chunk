@@ -166,13 +166,14 @@ class DPRRetriever():
     
     def find_neg(self, df, name, no_negs=3, segmented=True):
         retrieved_list = self.retrieve_on_data(df, name, no_negs+5, segmented, saved=False)
-        tokenized_ques = []
-        ans_id = []
-        new_neg = []
+        #tokenized_ques = []
+        #ans_id = []
+        #new_neg = []
         
         ttokenized_ques = df['tokenized_question'].tolist()
         tans_id = df['ans_id'].tolist()
         tnew_neg = []
+        tbest_ans_id = df['best_ans_id'].tolist()
         
         for i in range(len(df)):
             retrieved_ids = retrieved_list[i]
@@ -189,34 +190,35 @@ class DPRRetriever():
             
             tnew_neg.append(new_neg_ids) 
             
-            for x in ans_ids:
-                tokenized_ques.append(ttokenized_ques[i])
-                ans_id.append(x)
-                new_neg.append(new_neg_ids) 
+            #for x in ans_ids:
+            #    tokenized_ques.append(ttokenized_ques[i])
+            #    ans_id.append(x)
+            #    new_neg.append(new_neg_ids) 
             
-        dff = pd.DataFrame()
-        dff['tokenized_question'] = tokenized_ques
-        dff['ans_id'] = ans_id
-        dff['neg_ids'] = new_neg
+        #dff = pd.DataFrame()
+        #dff['tokenized_question'] = tokenized_ques
+        #dff['ans_id'] = ans_id
+        #dff['neg_ids'] = new_neg
         
         dt = pd.DataFrame()
         dt['tokenized_question'] = ttokenized_ques
         dt['ans_id'] = tans_id
+        dt['best_ans_id'] = tbest_ans_id
         dt['neg_ids'] = tnew_neg
-        return dff, dt
+        return dt
     
     def increase_neg(self, no_negs=3, segmented=True):
         dtrain = pd.read_csv(os.path.join(self.args.data_dir, self.train_file))
         dval = pd.read_csv(os.path.join(self.args.data_dir, self.val_file))
         dtest = pd.read_csv(os.path.join(self.args.data_dir, self.test_file))
         
-        dnew_train, dttrain = self.find_neg(dtrain, "train", no_negs, segmented)
-        dnew_val, dtval = self.find_neg(dval, "val", no_negs, segmented)
-        dnew_test, dttest = self.find_neg(dtest, "test", no_negs, segmented)
+        dttrain = self.find_neg(dtrain, "train", no_negs, segmented)
+        dtval = self.find_neg(dval, "val", no_negs, segmented)
+        dttest = self.find_neg(dtest, "test", no_negs, segmented)
         
-        dnew_train.to_csv("outputs/data/{}/train.csv".format(self.save_type), index=False)
-        dnew_val.to_csv("outputs/data/{}/val.csv".format(self.save_type), index=False)
-        dnew_test.to_csv("outputs/data/{}/test.csv".format(self.save_type), index=False) 
+        #dnew_train.to_csv("outputs/data/{}/train.csv".format(self.save_type), index=False)
+        #dnew_val.to_csv("outputs/data/{}/val.csv".format(self.save_type), index=False)
+        #dnew_test.to_csv("outputs/data/{}/test.csv".format(self.save_type), index=False) 
         
         dttrain.to_csv("outputs/data/{}/{}".format(self.save_type, self.train_file), index=False)
         dtval.to_csv("outputs/data/{}/{}".format(self.save_type, self.val_file), index=False)
