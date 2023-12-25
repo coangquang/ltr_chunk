@@ -165,7 +165,7 @@ class DPRRetriever():
         return retrieved_list
     
     def find_neg(self, df, name, no_negs=3, segmented=True):
-        retrieved_list = self.retrieve_on_data(df, name, no_negs+5, segmented, saved=False)
+        retrieved_list = self.retrieve_on_data(df, name, no_negs+100, segmented, saved=False)
         #tokenized_ques = []
         #ans_id = []
         #new_neg = []
