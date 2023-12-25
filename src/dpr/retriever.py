@@ -238,7 +238,7 @@ class DPRRetriever():
             for a_id in ans_ids:
                 if a_id in retrieved_ids:
                     retrieved_ids.remove(a_id)
-            if len(retrieved_ids) == top_k - len(ans_ids):
+            if len(retrieved_ids) == top_k - len(ans_idss):
                 all_count += 1
             if len(retrieved_ids) < top_k:
                 hit_count += 1
