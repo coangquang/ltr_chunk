@@ -165,83 +165,85 @@ class DPRRetriever():
         return retrieved_list
     
     def find_neg(self, df, name, no_negs=3, segmented=True):
-        retrieved_list = self.retrieve_on_data(df, name, no_negs+100, segmented, saved=False)
-        #tokenized_ques = []
-        #ans_id = []
-        #new_neg = []
+        retrieved_list = self.retrieve_on_data(df, name, len(df), segmented, saved=False)
         
         ttokenized_ques = df['tokenized_question'].tolist()
         tans_id = df['ans_id'].tolist()
         tnew_neg = []
         tbest_ans_id = df['best_ans_id'].tolist()
         
+        nbest_ans_id = []
+        
         for i in range(len(df)):
             retrieved_ids = retrieved_list[i]
             ans_idss = json.loads(tans_id[i])
             ans_ids = []
+            nbest_ans_ids = []
             for a_ids in ans_idss:
                 ans_ids += a_ids
-            #ans_ids = tans_id[i]
-            #ans_ids = str(ans_ids)
-            #ans_ids = [int(x) for x in ans_ids.split(", ")]
+                found = True
+                ij = 0
+                while found:
+                    if retrieved_ids[ij] in a_ids:
+                        nbest_ans_ids.append(retrieved_ids[ij]) 
+                        found = False
+                    ij += 1
 
-            new_neg_ids = [x for x in retrieved_ids if x not in ans_ids]# and x not in kept_neg_ids]
+            new_neg_ids = [x for x in retrieved_ids[:100] if x not in ans_ids]# and x not in kept_neg_ids]
             new_neg_ids = new_neg_ids[:no_negs]
-            
+            nbest_ans_id.append(nbest_ans_ids)
             tnew_neg.append(new_neg_ids) 
             
-            #for x in ans_ids:
-            #    tokenized_ques.append(ttokenized_ques[i])
-            #    ans_id.append(x)
-            #    new_neg.append(new_neg_ids) 
-            
-        #dff = pd.DataFrame()
-        #dff['tokenized_question'] = tokenized_ques
-        #dff['ans_id'] = ans_id
-        #dff['neg_ids'] = new_neg
+        dn = pd.DataFrame()
+        dn['tokenized_question'] = ttokenized_ques
+        dn['ans_id'] = tans_id
+        dn['best_ans_id'] = nbest_ans_id
+        dn['neg_ids'] = tnew_neg
         
         dt = pd.DataFrame()
         dt['tokenized_question'] = ttokenized_ques
         dt['ans_id'] = tans_id
         dt['best_ans_id'] = tbest_ans_id
         dt['neg_ids'] = tnew_neg
-        return dt
+        return dt, dn
     
     def increase_neg(self, no_negs=3, segmented=True):
         dtrain = pd.read_csv(os.path.join(self.args.data_dir, self.train_file))
         dval = pd.read_csv(os.path.join(self.args.data_dir, self.val_file))
         dtest = pd.read_csv(os.path.join(self.args.data_dir, self.test_file))
         
-        dttrain = self.find_neg(dtrain, "train", no_negs, segmented)
-        dtval = self.find_neg(dval, "val", no_negs, segmented)
-        dttest = self.find_neg(dtest, "test", no_negs, segmented)
+        dttrain, dntrain = self.find_neg(dtrain, "train", no_negs, segmented)
+        dtval, dnval = self.find_neg(dval, "val", no_negs, segmented)
+        dttest, dntest = self.find_neg(dtest, "test", no_negs, segmented)
         
-        #dnew_train.to_csv("outputs/data/{}/train.csv".format(self.save_type), index=False)
-        #dnew_val.to_csv("outputs/data/{}/val.csv".format(self.save_type), index=False)
-        #dnew_test.to_csv("outputs/data/{}/test.csv".format(self.save_type), index=False) 
+        dttrain.to_csv("outputs/data/{}/old/{}".format(self.save_type, self.train_file), index=False)
+        dtval.to_csv("outputs/data/{}/old/{}".format(self.save_type, self.val_file), index=False)
+        dttest.to_csv("outputs/data/{}/old/{}".format(self.save_type, self.test_file), index=False)
         
-        dttrain.to_csv("outputs/data/{}/{}".format(self.save_type, self.train_file), index=False)
-        dtval.to_csv("outputs/data/{}/{}".format(self.save_type, self.val_file), index=False)
-        dttest.to_csv("outputs/data/{}/{}".format(self.save_type, self.test_file), index=False)
+        dntrain.to_csv("outputs/data/{}/new/{}".format(self.save_type, self.train_file), index=False)
+        dnval.to_csv("outputs/data/{}/new/{}".format(self.save_type, self.val_file), index=False)
+        dntest.to_csv("outputs/data/{}/new/{}".format(self.save_type, self.test_file), index=False)
     
     def calculate_score(self, df, retrieved_list):
         top_k = len(retrieved_list[0])
         all_count = 0
         hit_count = 0
         for i in range(len(df)):
+            all_check = True
+            hit_check = False
             retrieved_ids = retrieved_list[i]
-            ans_idss = json.loads(df['ans_id'][i])
-            ans_ids = []
-            for a_ids in ans_idss:
-                ans_ids += a_ids
-            #ans_ids = [int(x) for x in str(df['ans_id'][i]).split(", ")]
-            for a_id in ans_ids:
-                if a_id in retrieved_ids:
-                    retrieved_ids.remove(a_id)
-            if len(retrieved_ids) == top_k - len(ans_idss):
-                all_count += 1
-            if len(retrieved_ids) < top_k:
+            ans_ids = json.loads(df['ans_id'][i])
+            for a_ids in ans_ids:
+                com = [a_id for a_id in a_ids if a_id in retrieved_ids]
+                if len(com) > 0:
+                    hit_check = True
+                else:
+                    all_check = False
+            
+            if hit_check:
                 hit_count += 1
+            if all_check:
+                all_count += 1
                 
         all_acc = all_count/len(df)
         hit_acc = hit_count/len(df)
