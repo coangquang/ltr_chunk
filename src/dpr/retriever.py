@@ -165,7 +165,7 @@ class DPRRetriever():
         return retrieved_list
     
     def find_neg(self, df, name, no_negs=3, segmented=True):
-        retrieved_list = self.retrieve_on_data(df, name, len(df), segmented, saved=False)
+        retrieved_list = self.retrieve_on_data(df, name, 100, segmented, saved=False)
         
         ttokenized_ques = df['tokenized_question'].tolist()
         tans_id = df['ans_id'].tolist()
@@ -177,19 +177,24 @@ class DPRRetriever():
         for i in range(len(df)):
             retrieved_ids = retrieved_list[i]
             ans_idss = json.loads(tans_id[i])
+            tbest_ans_idss = json.loads(tbest_ans_id[i])
             ans_ids = []
             nbest_ans_ids = []
-            for a_ids in ans_idss:
+            for j in range(len(ans_idss)):
+                a_ids = ans_idss[j]
+                tbest_a_id = tbest_ans_idss[j]
                 ans_ids += a_ids
                 found = True
                 ij = 0
-                while found:
+                while (found and ij < 100):
                     if retrieved_ids[ij] in a_ids:
                         nbest_ans_ids.append(retrieved_ids[ij]) 
                         found = False
                     ij += 1
-
-            new_neg_ids = [x for x in retrieved_ids[:100] if x not in ans_ids]# and x not in kept_neg_ids]
+                if found:
+                    nbest_ans_ids.append(tbest_a_id)
+                        
+            new_neg_ids = [x for x in retrieved_ids if x not in ans_ids]# and x not in kept_neg_ids]
             new_neg_ids = new_neg_ids[:no_negs]
             nbest_ans_id.append(nbest_ans_ids)
             tnew_neg.append(new_neg_ids) 
