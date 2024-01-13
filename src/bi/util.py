@@ -11,11 +11,16 @@ def get_tokenizer(model_checkpoint):
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
     return tokenizer
 
+def query_trans(text, tokenizer):
+    return "câu hỏi " + tokenizer.sep_token + " " + text
+def context_trans(text, tokenizer):
+    return "đoạn văn " + tokenizer.sep_token + " " + text
+
 def build_dpr_traindata(corpus, df, tokenizer, q_len, ctx_len, batch_size, no_hard, shuffle = False, all_data=False):
     """
     This funtion builds train and val data loader for biencoder training
     """
-    tokenized_questions = df["tokenized_question"].tolist()
+    tokenized_questions = [query_trans(x, tokenizer) for x in df["tokenized_question"].tolist()]
     questions = []
     positives = []
     negatives = []
@@ -25,11 +30,11 @@ def build_dpr_traindata(corpus, df, tokenizer, q_len, ctx_len, batch_size, no_ha
     for i in range(len(df)):
         #positive_ids = [int(x) for x in str(ans_ids[i][1:-1]).split(", ")]
         positive_ids = json.loads(str(ans_ids[i]))
-        poss = [corpus[j] for j in positive_ids]
+        poss = [context_trans(corpus[j], tokenizer) for j in positive_ids]
         if no_hard != 0:
             #negative_ids = [int(y) for y in neg_ids[i][1:-1].split(", ")[:no_hard]]
             negative_ids = json.loads(str(neg_ids[i]))[:no_hard]
-            negs = [corpus[j] for j in negative_ids]
+            negs = [context_trans(corpus[j], tokenizer) for j in negative_ids]
 
         if all_data:
             for pos in poss:

@@ -6,7 +6,7 @@ import pandas as pd
 import faiss
 from datasets import load_dataset
 from .model import BiEncoder
-from .util import get_tokenizer
+from .util import get_tokenizer, query_trans, context_trans
 from .preprocess import tokenise, preprocess_question
 from pyvi.ViTokenizer import tokenize
 
@@ -51,12 +51,12 @@ class DPRRetriever():
     def get_index(self):
         self.bi_encoder.to("cuda").eval()
         with torch.no_grad():
-            corpus_with_embeddings = self.corpus.map(lambda example: {'embeddings': self.bi_encoder.get_representation(self.dpr_tokenizer.encode_plus(example["tokenized_text"],
+            corpus_with_embeddings = self.corpus.map(lambda example: {'embeddings': self.bi_encoder.get_representation(self.dpr_tokenizer.encode_plus(context_trans(example["tokenized_text"], self.dpr_tokenizer),
                                                                                                                                                        padding='max_length',
                                                                                                                                                        truncation=True,
                                                                                                                                                        max_length=self.args.ctx_len,
                                                                                                                                                        return_tensors='pt')['input_ids'].to(self.device),
-                                                                                                                        self.dpr_tokenizer.encode_plus(example["tokenized_text"],
+                                                                                                                        self.dpr_tokenizer.encode_plus(context_trans(example["tokenized_text"], self.dpr_tokenizer),
                                                                                                                                                        padding='max_length',
                                                                                                                                                        truncation=True,
                                                                                                                                                        max_length=self.args.ctx_len,
@@ -72,9 +72,9 @@ class DPRRetriever():
         self.bi_encoder.to(self.device).eval()
         
         if segmented:
-            tokenized_question = question
+            tokenized_question = query_trans(question, self.dpr_tokenizer)
         else:
-             tokenized_question = tokenise(preprocess_question(question, remove_end_phrase=False), tokenize)
+             tokenized_question = query_trans(tokenise(preprocess_question(question, remove_end_phrase=False), tokenize), self.dpr_tokenizer)
 
         with torch.no_grad():
             Q = self.dpr_tokenizer.encode_plus(tokenized_question, padding='max_length', truncation=True, max_length=self.args.q_len, return_tensors='pt')
