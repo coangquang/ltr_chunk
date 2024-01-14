@@ -12,9 +12,12 @@ def get_tokenizer(model_checkpoint):
     return tokenizer
 
 def query_trans(text, tokenizer):
-    return "câu hỏi " + tokenizer.sep_token + " " + text
+    #return "câu hỏi " + tokenizer.sep_token + " " + text
+    return text
+
 def context_trans(text, tokenizer):
-    return "đoạn văn " + tokenizer.sep_token + " " + text
+    #return "đoạn văn " + tokenizer.sep_token + " " + text
+    return text
 
 def build_dpr_traindata(corpus, df, tokenizer, q_len, ctx_len, batch_size, no_hard, shuffle = False, all_data=False):
     """
