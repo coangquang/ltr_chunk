@@ -20,7 +20,8 @@ def build_dpr_traindata(corpus, df, tokenizer, q_len, ctx_len, batch_size, no_ha
     positives = []
     negatives = []
     ans_ids = df["best_ans_id"].tolist()
-    neg_ids = df["neg_ids"].tolist()
+    if no_hard != 0:
+        neg_ids = df["neg_ids"].tolist()
 
     for i in range(len(df)):
         #positive_ids = [int(x) for x in str(ans_ids[i][1:-1]).split(", ")]
