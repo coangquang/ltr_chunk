@@ -3,8 +3,8 @@ import argparse
 import pandas as pd
 import torch
 from bi.util import get_tokenizer, build_dpr_traindata#, embed_corpus
-from bi.trainer import DPRTrainer
-from bi.retriever import DPRRetriever
+from bi.trainer import BiTrainer
+from bi.retriever import BiRetriever
 
 def main():
     parser = argparse.ArgumentParser()
@@ -93,19 +93,19 @@ def main():
                                        shuffle=True,
                                        all_data=args.all_data)
 
-    dpr_trainer = DPRTrainer(args=args,
+    dpr_trainer = BiTrainer(args=args,
                             train_loader=train_loader,
                             val_loader=val_loader)
     
     bi_encoder = dpr_trainer.train_biencoder()
     torch.cuda.empty_cache()
     print("Check with the final state:")
-    dpr_retriever = DPRRetriever(args, encoder=bi_encoder, save_type="final")
+    dpr_retriever = BiRetriever(args, encoder=bi_encoder, save_type="final")
     dpr_retriever.test_on_data(top_k = [1,5,10,30,100])
     dpr_retriever.increase_neg(no_negs=15, segmented=True)
     print("Check with the best state:")
     torch.cuda.empty_cache()
-    dpr_retriever = DPRRetriever(args, save_type="best")
+    dpr_retriever = BiRetriever(args, save_type="best")
     dpr_retriever.test_on_data(top_k = [1,5,10,30,100])
     dpr_retriever.increase_neg(no_negs=15, segmented=True)
     

@@ -40,13 +40,13 @@ class Encoder(nn.Module):
                 output = outputs[1]   
         return output
     
-class BiEncoder(nn.Module):
+class NBiEncoder(nn.Module):
     def __init__(self,
                  model_checkpoint,
                  encoder=None,
                  representation=0,
                  fixed=False):
-        super(BiEncoder, self).__init__()
+        super(NBiEncoder, self).__init__()
         if encoder == None:
             encoder = Encoder(model_checkpoint,
                               representation,

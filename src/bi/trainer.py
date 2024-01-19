@@ -8,7 +8,7 @@ from torch.nn import DataParallel
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import LambdaLR
 
-from .model import BiEncoder
+from .model import NBiEncoder
 from .loss import BiEncoderNllLoss, BiEncoderDoubleNllLoss
 
 
@@ -45,7 +45,7 @@ class RandContext:
         self._fork.__exit__(exc_type, exc_val, exc_tb)
         self._fork = None
     
-class DPRTrainer():
+class BiTrainer():
     """
     Trainer for biencoder
     """
@@ -61,7 +61,7 @@ class DPRTrainer():
         self.val_loader = val_loader
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = BiEncoder(model_checkpoint=self.args.BE_checkpoint,
+        self.model = NBiEncoder(model_checkpoint=self.args.BE_checkpoint,
                                representation=self.args.BE_representation,
                                fixed=self.args.bi_fixed)
         if self.args.load_path is not None:

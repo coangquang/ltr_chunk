@@ -5,12 +5,12 @@ import torch
 import pandas as pd
 import faiss
 from datasets import load_dataset
-from .model import BiEncoder
+from .model import NBiEncoder
 from .util import get_tokenizer, query_trans, context_trans
 from .preprocess import tokenise, preprocess_question
 from pyvi.ViTokenizer import tokenize
 
-class DPRRetriever():
+class BiRetriever():
     def __init__(self, args, encoder=None, biencoder=None, save_type="dpr"):
         start = time.time()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,12 +28,12 @@ class DPRRetriever():
         if biencoder is not None:
             self.biencoder = biencoder
         elif encoder is not None:
-            self.biencoder = BiEncoder(model_checkpoint=self.args.BE_checkpoint,
+            self.biencoder = NBiEncoder(model_checkpoint=self.args.BE_checkpoint,
                                        encoder=encoder,
                                        representation=self.args.BE_representation,
                                        fixed=self.args.bi_fixed)
         else:
-            self.biencoder = BiEncoder(model_checkpoint=self.args.BE_checkpoint,
+            self.biencoder = NBiEncoder(model_checkpoint=self.args.BE_checkpoint,
                                        representation=self.args.BE_representation,
                                        fixed=self.args.bi_fixed)
             self.biencoder.load_state_dict(torch.load(self.args.biencoder_path))
