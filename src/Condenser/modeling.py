@@ -87,7 +87,7 @@ class CondenserForPretraining(nn.Module):
 
 
     def mlm_loss(self, hiddens, labels):
-        pred_scores = self.lm.lm_head(hiddens)
+        pred_scores = self.lm.cls(hiddens)
         masked_lm_loss = self.cross_entropy(
             pred_scores.view(-1, self.lm.config.vocab_size),
             labels.view(-1)
@@ -183,7 +183,7 @@ class DebertaV2CondenserForPretraining(CondenserForPretraining):
         self.data_args = data_args
 
     def mlm_loss(self, hiddens, labels):
-        pred_scores = self.lm.lm_head(hiddens)
+        pred_scores = self.lm.cls(hiddens)
         masked_lm_loss = self.cross_entropy(
             pred_scores.view(-1, self.lm.config.vocab_size),
             labels.view(-1)
