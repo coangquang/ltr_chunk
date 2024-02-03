@@ -23,7 +23,7 @@ from datasets import load_dataset
 from arguments import DataTrainingArguments, ModelArguments, \
     CondenserPreTrainingArguments as TrainingArguments
 from data import CondenserCollator
-from modeling import CondenserForPretraining, RobertaCondenserForPretraining
+from modeling import CondenserForPretraining, RobertaCondenserForPretraining, DebertaV2CondenserForPretraining
 from trainer import CondenserPreTrainer as Trainer
 import transformers
 from transformers import (
@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 CONDENSER_TYPE_MAP = {
     'bert': CondenserForPretraining,
     'roberta': RobertaCondenserForPretraining,
+    'deberta-v2': DebertaV2CondenserForPretraining
 }
 
 

@@ -20,10 +20,11 @@ from torch import nn, Tensor
 import torch.distributed as dist
 import torch.nn.functional as F
 from transformers import BertModel, BertConfig, AutoModel, AutoModelForMaskedLM, AutoConfig, PretrainedConfig, \
-    RobertaModel
+    RobertaModel, DebertaV2Model
 from transformers.models.bert.modeling_bert import BertPooler, BertOnlyMLMHead, BertPreTrainingHeads, BertLayer
 from transformers.modeling_outputs import SequenceClassifierOutput, BaseModelOutputWithPooling, MaskedLMOutput
 from transformers.models.roberta.modeling_roberta import RobertaLayer
+from transformers.models.deberta_v2.modeling_deberta_v2 import DebertaV2Layer
 
 from arguments import DataTrainingArguments, ModelArguments, CoCondenserPreTrainingArguments
 from transformers import TrainingArguments
@@ -143,6 +144,35 @@ class RobertaCondenserForPretraining(CondenserForPretraining):
         self.lm = roberta
         self.c_head = nn.ModuleList(
             [RobertaLayer(roberta.config) for _ in range(model_args.n_head_layers)]
+        )
+        self.c_head.apply(self.lm._init_weights)
+        # self.mlm_head = BertOnlyMLMHead(bert.config)
+        self.cross_entropy = nn.CrossEntropyLoss()
+
+        self.model_args = model_args
+        self.train_args = train_args
+        self.data_args = data_args
+
+    def mlm_loss(self, hiddens, labels):
+        pred_scores = self.lm.lm_head(hiddens)
+        masked_lm_loss = self.cross_entropy(
+            pred_scores.view(-1, self.lm.config.vocab_size),
+            labels.view(-1)
+        )
+        return masked_lm_loss
+    
+class DebertaV2CondenserForPretraining(CondenserForPretraining):
+    def __init__(
+            self,
+            deberta: DebertaV2Model,
+            model_args: ModelArguments,
+            data_args: DataTrainingArguments,
+            train_args: TrainingArguments
+    ):
+        super(CondenserForPretraining, self).__init__()
+        self.lm = deberta
+        self.c_head = nn.ModuleList(
+            [DebertaV2Layer(deberta.config) for _ in range(model_args.n_head_layers)]
         )
         self.c_head.apply(self.lm._init_weights)
         # self.mlm_head = BertOnlyMLMHead(bert.config)
