@@ -30,10 +30,13 @@ class CondenserCollator(DataCollatorForWholeWordMask):
 
         from transformers import BertTokenizer, BertTokenizerFast, PhobertTokenizer
         from transformers import RobertaTokenizer, RobertaTokenizerFast
+        from transformers import DebertaV2Tokenizer
         if isinstance(self.tokenizer, (BertTokenizer, BertTokenizerFast)):
             self.whole_word_cand_indexes = self._whole_word_cand_indexes_bert
         elif isinstance(self.tokenizer, (RobertaTokenizer, RobertaTokenizerFast, PhobertTokenizer)):
             self.whole_word_cand_indexes = self. _whole_word_cand_indexes_roberta
+        elif isinstance(self.tokenizer, DebertaV2Tokenizer):
+            self.whole_word_cand_indexes = self._whole_word_cand_indexes_deberta_v2
         else:
             raise NotImplementedError(f'{type(self.tokenizer)} collator not supported yet')
 
@@ -61,6 +64,15 @@ class CondenserCollator(DataCollatorForWholeWordMask):
                 cand_indexes.append([0])
             elif not token.startswith('\u0120'):
                 cand_indexes[-1].append(i)
+            else:
+                cand_indexes.append([i])
+        return cand_indexes
+    
+    def _whole_word_cand_indexes_deberta_v2(self, input_tokens:List[str]):
+        cand_indexes = []
+        for (i, token) in enumerate(input_tokens):
+            if token in self.specials:
+                continue
             else:
                 cand_indexes.append([i])
         return cand_indexes
