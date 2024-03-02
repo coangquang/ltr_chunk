@@ -1,4 +1,5 @@
 import os
+import json
 import random
 from copy import deepcopy
 from dataclasses import dataclass
@@ -22,7 +23,7 @@ class DatasetForPretraining(torch.utils.data.Dataset):
             self.dataset = concatenate_datasets(datasets)
         else:
             print(f"Loading {data_dir}")
-            self.dataset = self.load_datasett()
+            self.dataset = self.load_dataset_ltr(data_dir)
 
     def load_dataset(self, file):
         if file.endswith('.jsonl') or file.endswith('.json'):
@@ -32,9 +33,12 @@ class DatasetForPretraining(torch.utils.data.Dataset):
         else:
             raise NotImplementedError(f"Not support this file format:{file}")
         
-    def load_datasett(self):
-        data = load_dataset('sentence-transformers/embedding-training-data', data_files='msmarco-triplets.jsonl.gz', split='train').select(range(50000))
-        return list(itertools.chain.from_iterable(data['pos']))# + data['neg'])) 
+    def load_dataset_ltr(self, data_dir):
+        with open(data_dir, 'r') as f:
+            data = json.load(f)
+        #data = load_dataset('sentence-transformers/embedding-training-data', data_files='msmarco-triplets.jsonl.gz', split='train').select(range(50000))
+        #return list(itertools.chain.from_iterable(data['pos'])) 
+        return data
         
     def __getitem__(self, item):
         return self.dataset[item]#['pos']
