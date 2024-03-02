@@ -59,9 +59,9 @@ def main():
     model_args: ModelArguments
     data_args: DataTrainingArguments
     training_args: TrainingArguments
-    #print(model_args)
-    #print(data_args)
-    #print(training_args)
+    print(model_args)
+    print(data_args)
+    print(training_args)
     training_args.remove_unused_columns = False
 
     # Setup logging
