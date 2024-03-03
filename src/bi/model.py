@@ -33,7 +33,7 @@ class Encoder(nn.Module):
             #sequence_output = sequence_output.masked_fill(~attention_mask[..., None].bool(), 0.0)
         
             if self.representation == 'cls':
-                output = sequence_output[:, self.representation, :]
+                output = sequence_output[:, 0, :]
             elif self.representation == 'mean':
                 s = torch.sum(sequence_output * attention_mask.unsqueeze(-1).float(), dim=1)
                 d = attention_mask.sum(axis=1, keepdim=True).float()
