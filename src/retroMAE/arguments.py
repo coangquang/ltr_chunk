@@ -41,3 +41,6 @@ class ModelArguments:
     config_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
     )
+    representation: Optional[str] = field(
+        default='cls', metadata={"help": "Representation type"}
+    )
