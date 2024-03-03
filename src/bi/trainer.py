@@ -125,10 +125,10 @@ class BiTrainer():
                 self.best_val_acc = epoch_accuracy
                 self.patience_counter = 0
                 if self.parallel:
-                    self.model.module.encoder.save(self.args.final_path)
+                    self.model.module.encoder.save(self.args.biencoder_path)
                     #torch.save(self.model.module.state_dict(), self.args.biencoder_path)
                 else:
-                    self.model.encoder.save(self.args.final_path)
+                    self.model.encoder.save(self.args.biencoder_path)
                     #torch.save(self.model.state_dict(), self.args.biencoder_path)
         
             if self.epoch == self.args.BE_num_epochs:

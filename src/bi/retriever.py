@@ -33,10 +33,10 @@ class BiRetriever():
                                        representation=self.args.BE_representation,
                                        fixed=self.args.bi_fixed)
         else:
-            self.biencoder = SharedBiEncoder(model_checkpoint=self.args.BE_checkpoint,
-                                       representation=self.args.BE_representation,
-                                       fixed=self.args.bi_fixed)
-            self.biencoder.load_state_dict(torch.load(self.args.biencoder_path))
+            self.biencoder = SharedBiEncoder(model_checkpoint=self.args.biencoder_path,
+                                            representation=self.args.BE_representation,
+                                            fixed=self.args.bi_fixed)
+            #self.biencoder.load_state_dict(torch.load(self.args.biencoder_path))
             
         self.biencoder.to(self.device)
         self.encoder = self.biencoder.get_model()
