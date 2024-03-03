@@ -60,11 +60,17 @@ class RetroMAEForPretraining(nn.Module):
         if self.model_args.representation == 'cls':
             cls_hiddens = lm_out.hidden_states[-1][:, :1]  # B 1 D
         elif self.model_args.representation == 'mean':
+            print(encoder_attention_mask.size())
             sequence_output = lm_out.hidden_states[-1]
+            print(sequence_output.size())
             s = torch.sum(sequence_output * encoder_attention_mask.unsqueeze(-1).float(), dim=1)
+            print(s.size())
             d = encoder_attention_mask.sum(axis=1, keepdim=True).float()
+            print(d.size())
             cls_hiddens = s / d
+            print(sequence_output.size())
             cls_hiddens = torch.nn.functional.normalize(cls_hiddens, dim=-1)
+            print(sequence_output.size())
 
         decoder_embedding_output = self.decoder_embeddings(input_ids=decoder_input_ids)
         hiddens = torch.cat([cls_hiddens, decoder_embedding_output[:, 1:]], dim=1)
