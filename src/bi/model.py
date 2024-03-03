@@ -5,7 +5,7 @@ from transformers import AutoModel
 class Encoder(nn.Module):
     def __init__(self, 
                  model_checkpoint,
-                 representation=0,
+                 representation='cls',
                  fixed=False):
         super(Encoder, self).__init__()
 
@@ -30,23 +30,35 @@ class Encoder(nn.Module):
                                        token_type_ids)
             
             sequence_output = outputs['last_hidden_state']
-            sequence_output = sequence_output.masked_fill(~attention_mask[..., None].bool(), 0.0)
+            #sequence_output = sequence_output.masked_fill(~attention_mask[..., None].bool(), 0.0)
         
-            if self.representation > -2:
+            if self.representation == 'cls':
                 output = sequence_output[:, self.representation, :]
-            elif self.representation == -10:
-                output = sequence_output.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
-            elif self.representation == -100:
-                output = outputs[1]   
+            elif self.representation == 'mean':
+                s = torch.sum(sequence_output * attention_mask.unsqueeze(-1).float(), dim=1)
+                d = attention_mask.sum(axis=1, keepdim=True).float()
+                output = s / d
+                output = torch.nn.functional.normalize(output, dim=-1)
+                #output = sequence_output.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
+            #elif self.representation == -100:
+            #    output = outputs[1]   
         return output
     
-class NBiEncoder(nn.Module):
+    def save(self, output_dir: str):
+        state_dict = self.encoder.state_dict()
+        state_dict = type(state_dict)(
+            {k: v.clone().cpu()
+             for k,
+                 v in state_dict.items()})
+        self.encoder.save_pretrained(output_dir, state_dict=state_dict)
+    
+class SharedBiEncoder(nn.Module):
     def __init__(self,
                  model_checkpoint,
                  encoder=None,
-                 representation=0,
+                 representation='cls',
                  fixed=False):
-        super(NBiEncoder, self).__init__()
+        super(SharedBiEncoder, self).__init__()
         if encoder == None:
             encoder = Encoder(model_checkpoint,
                               representation,
@@ -64,5 +76,5 @@ class NBiEncoder(nn.Module):
 
         return q_out, ctx_out
 
-    def get_models(self):
+    def get_model(self):
         return self.encoder

@@ -8,7 +8,7 @@ from torch.nn import DataParallel
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import LambdaLR
 
-from .model import NBiEncoder
+from .model import SharedBiEncoder
 from .loss import BiEncoderNllLoss, BiEncoderDoubleNllLoss
 
 
@@ -61,11 +61,11 @@ class BiTrainer():
         self.val_loader = val_loader
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = NBiEncoder(model_checkpoint=self.args.BE_checkpoint,
-                               representation=self.args.BE_representation,
-                               fixed=self.args.bi_fixed)
-        if self.args.load_path is not None:
-            self.model.load_state_dict(torch.load(self.args.load_path))
+        self.model = SharedBiEncoder(model_checkpoint=self.args.BE_checkpoint,
+                                    representation=self.args.BE_representation,
+                                    fixed=self.args.bi_fixed)
+        #if self.args.load_path is not None:
+        #    self.model.load_state_dict(torch.load(self.args.load_path))
         if self.parallel:
             print("Parallel Training")
             self.model = DataParallel(self.model)
@@ -125,31 +125,19 @@ class BiTrainer():
                 self.best_val_acc = epoch_accuracy
                 self.patience_counter = 0
                 if self.parallel:
-                    torch.save(self.model.module.state_dict(), self.args.biencoder_path)
+                    self.model.module.encoder.save(self.args.final_path)
+                    #torch.save(self.model.module.state_dict(), self.args.biencoder_path)
                 else:
-                    torch.save(self.model.state_dict(), self.args.biencoder_path)
+                    self.model.encoder.save(self.args.final_path)
+                    #torch.save(self.model.state_dict(), self.args.biencoder_path)
         
-            #if self.args.BE_num_epochs >= 5 and self.epoch % int(self.args.BE_num_epochs*0.2) == 0:
             if self.epoch == self.args.BE_num_epochs:
                 if self.parallel:
-                    #torch.save(self.model.module.state_dict(),
-                    #           "hard{}_epoch{}_batch{}_ratio{}.pth.tar".format(self.args.no_hard,
-                    #                                                           self.args.BE_num_epochs,
-                    #                                                           self.args.BE_train_batch_size,
-                    #                                                           self.args.BE_loss))
-                    torch.save(self.model.module.state_dict(), self.args.final_path)
-                    
+                    self.model.module.encoder.save(self.args.final_path)
+                    #torch.save(self.model.module.state_dict(), self.args.final_path)
                 else:
-                    #torch.save(self.model.state_dict(),
-                    #           "hard{}_epoch{}_batch{}_ratio{}.pth.tar".format(self.args.no_hard,
-                    #                                                           self.args.BE_num_epochs,
-                    #                                                           self.args.BE_train_batch_size,
-                    #                                                           self.args.BE_loss))
-                    torch.save(self.model.state_dict(), self.args.final_path)
-                    
-                    
-                #else:
-                 #   torch.save(self.model.state_dict(), "epoch{}.pth.tar".format(self.epoch))
+                    self.model.encoder.save(self.args.final_path)
+                    #torch.save(self.model.state_dict(), self.args.final_path)
             
         # Plotting of the loss curves for the train and validation sets.
         plt.figure()
@@ -172,9 +160,9 @@ class BiTrainer():
     
         #return the final q_model, ctx_model
         if self.parallel:
-            return self.model.module.get_models()
+            return self.model.module.get_model()
         else:
-            return self.model.get_models()
+            return self.model.get_model()
         
     def train(self):
         self.model.train()

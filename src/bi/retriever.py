@@ -5,7 +5,7 @@ import torch
 import pandas as pd
 import faiss
 from datasets import load_dataset
-from .model import NBiEncoder
+from .model import SharedBiEncoder
 from .util import get_tokenizer, query_trans, context_trans
 from .preprocess import tokenise, preprocess_question
 from pyvi.ViTokenizer import tokenize
@@ -28,18 +28,18 @@ class BiRetriever():
         if biencoder is not None:
             self.biencoder = biencoder
         elif encoder is not None:
-            self.biencoder = NBiEncoder(model_checkpoint=self.args.BE_checkpoint,
+            self.biencoder = SharedBiEncoder(model_checkpoint=self.args.BE_checkpoint,
                                        encoder=encoder,
                                        representation=self.args.BE_representation,
                                        fixed=self.args.bi_fixed)
         else:
-            self.biencoder = NBiEncoder(model_checkpoint=self.args.BE_checkpoint,
+            self.biencoder = SharedBiEncoder(model_checkpoint=self.args.BE_checkpoint,
                                        representation=self.args.BE_representation,
                                        fixed=self.args.bi_fixed)
             self.biencoder.load_state_dict(torch.load(self.args.biencoder_path))
             
         self.biencoder.to(self.device)
-        self.bi_encoder = self.biencoder.get_models()
+        self.encoder = self.biencoder.get_model()
         self.corpus = load_dataset("csv", data_files=self.args.corpus_file, split = 'train')
         if self.args.index_path:
             self.corpus.load_faiss_index('embeddings', self.args.index_path)
@@ -49,9 +49,9 @@ class BiRetriever():
         print(end - start)
         
     def get_index(self):
-        self.bi_encoder.to("cuda").eval()
+        self.encoder.to("cuda").eval()
         with torch.no_grad():
-            corpus_with_embeddings = self.corpus.map(lambda example: {'embeddings': self.bi_encoder.get_representation(self.dpr_tokenizer.encode_plus(context_trans(example["tokenized_text"], self.dpr_tokenizer),
+            corpus_with_embeddings = self.corpus.map(lambda example: {'embeddings': self.encoder.get_representation(self.dpr_tokenizer.encode_plus(context_trans(example["tokenized_text"], self.dpr_tokenizer),
                                                                                                                                                        padding='max_length',
                                                                                                                                                        truncation=True,
                                                                                                                                                        max_length=self.args.ctx_len,
@@ -69,7 +69,7 @@ class BiRetriever():
     
     def retrieve(self, question, top_k=100, segmented = False):
         start = time.time()
-        self.bi_encoder.to(self.device).eval()
+        self.encoder.to(self.device).eval()
         
         if segmented:
             tokenized_question = query_trans(question, self.dpr_tokenizer)
@@ -78,7 +78,7 @@ class BiRetriever():
 
         with torch.no_grad():
             Q = self.dpr_tokenizer.encode_plus(tokenized_question, padding='max_length', truncation=True, max_length=self.args.q_len, return_tensors='pt')
-            question_embedding = self.bi_encoder.get_representation(Q['input_ids'].to(self.device),
+            question_embedding = self.encoder.get_representation(Q['input_ids'].to(self.device),
                                                                    Q['attention_mask'].to(self.device))[0].to('cpu').numpy()
             scores, retrieved_examples = self.corpus.get_nearest_examples('embeddings', question_embedding, k=top_k)
             retrieved_ids = retrieved_examples['id']   

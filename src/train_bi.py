@@ -2,7 +2,7 @@ import os
 import argparse
 import pandas as pd
 import torch
-from bi.util import get_tokenizer, build_dpr_traindata#, embed_corpus
+from bi.util import get_tokenizer, build_dpr_traindata
 from bi.trainer import BiTrainer
 from bi.retriever import BiRetriever
 
@@ -14,12 +14,12 @@ def main():
                         help="Directory of the data folder (containing train, test, val, ttrain, ttest, tval file)")
     parser.add_argument("--BE_checkpoint", default="vinai/phobert-base-v2", type=str,
                         help="Name or directory of pretrained model for encoder")
-    parser.add_argument("--BE_representation", default=0, type=int,
+    parser.add_argument("--BE_representation", default='cls', type=str,
                         help="Type of encoder representation (-10 for avg, -100 for pooled-output)")
     parser.add_argument("--BE_score", default="dot", type=str,
                         help="Type of similarity score")
-    parser.add_argument("--load_path", default=None, type=str,
-                        help="Biencoder saved state for multi-stage training")
+    #parser.add_argument("--load_path", default=None, type=str,
+    #                    help="Biencoder saved state for multi-stage training")
     parser.add_argument("--bi_fixed", default=False, type=bool,
                         help="To fix encoder during training stage or not")
     parser.add_argument("--BE_num_epochs", default=2, type=int,
@@ -45,8 +45,8 @@ def main():
                         help="Biencoder loss alpha parameter, 1: mean use all (hard) negatives")
     parser.add_argument("--no_hard", default=0, type=int,
                         help="Number of hard negatives using for each question")
-    parser.add_argument("--patience", default=10, type=int,
-                        help="When using validattion result to save model")
+    #parser.add_argument("--patience", default=10, type=int,
+    #                    help="When using validattion result to save model")
     parser.add_argument("--final_path", default=None, type=str,
                         help="Path to save the final state")
     parser.add_argument("--biencoder_path", default=None, type=str,
