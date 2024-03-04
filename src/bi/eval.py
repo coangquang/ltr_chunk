@@ -162,7 +162,7 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFram
     1. Encode queries into dense embeddings;
     2. Search through faiss index
     """
-    model.to('cuda')
+    #model.to('cuda')
     q_embeddings = []
     questions = queries['tokenized_question']
     #questions = [process_query(x) for x in questions]
