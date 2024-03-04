@@ -63,7 +63,7 @@ class DPRTrainer():
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = BiEncoder(q_checkpoint=self.args.q_checkpoint,
                                ctx_checkpoint=self.args.ctx_checkpoint,
-                               representation=self.args.representation,
+                               representation=self.args.BE_representation,
                                q_fixed=self.args.q_fixed,
                                ctx_fixed=self.args.ctx_fixed)
         #if self.args.load_path is not None:
@@ -126,34 +126,28 @@ class DPRTrainer():
             else:
                 self.best_val_acc = epoch_accuracy
                 self.patience_counter = 0
+                os.makedirs(self.args.biencoder_path + "/q", exist_ok=True)
+                os.makedirs(self.args.biencoder_path + "/ctx", exist_ok=True)
                 if self.parallel:
-                    self.model.module.encoder.save(self.args.biencoder_path)
+                    self.model.module.q_encoder.save(self.args.biencoder_path + "/q")
+                    self.model.module.ctx_encoder.save(self.args.biencoder_path + "/ctx")
                     #torch.save(self.model.module.state_dict(), self.args.biencoder_path)
                 else:
-                    self.model.encoder.save(self.args.biencoder_path)
+                    self.model.q_encoder.save(self.args.biencoder_path + "/q")
+                    self.model.ctx_encoder.save(self.args.biencoder_path + "/ctx")
                     #torch.save(self.model.state_dict(), self.args.biencoder_path)
         
             #if self.args.BE_num_epochs >= 5 and self.epoch % int(self.args.BE_num_epochs*0.2) == 0:
             if self.epoch == self.args.BE_num_epochs:
+                os.makedirs(self.args.final_path + "/q", exist_ok=True)
+                os.makedirs(self.args.final_path + "/ctx", exist_ok=True)
                 if self.parallel:
-                    #torch.save(self.model.module.state_dict(),
-                    #           "hard{}_epoch{}_batch{}_ratio{}.pth.tar".format(self.args.no_hard,
-                    #                                                           self.args.BE_num_epochs,
-                    #                                                           self.args.BE_train_batch_size,
-                    #                                                           self.args.BE_loss))
-                    torch.save(self.model.module.state_dict(), self.args.final_path)
+                    self.model.module.q_encoder.save(self.args.final_path + "/q")
+                    self.model.module.ctx_encoder.save(self.args.final_path + "/ctx")
                     
                 else:
-                    #torch.save(self.model.state_dict(),
-                    #           "hard{}_epoch{}_batch{}_ratio{}.pth.tar".format(self.args.no_hard,
-                    #                                                           self.args.BE_num_epochs,
-                    #                                                           self.args.BE_train_batch_size,
-                    #                                                           self.args.BE_loss))
-                    torch.save(self.model.state_dict(), self.args.final_path)
-                    
-                    
-                #else:
-                 #   torch.save(self.model.state_dict(), "epoch{}.pth.tar".format(self.epoch))
+                    self.model.q_encoder.save(self.args.final_path + "/q")
+                    self.model.ctx_encoder.save(self.args.final_path + "/ctx")
             
         # Plotting of the loss curves for the train and validation sets.
         plt.figure()

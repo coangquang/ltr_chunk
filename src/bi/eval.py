@@ -268,6 +268,40 @@ def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30]):
         
     return metrics
 
+def calculate_score(df, retrieved_list):
+    all_count = 0
+    hit_count = 0
+    for i in range(len(df)):
+        all_check = True
+        hit_check = False
+        retrieved_ids = retrieved_list[i]
+        ans_ids = json.loads(df['ans_id'][i])
+        for a_ids in ans_ids:
+            com = [a_id for a_id in a_ids if a_id in retrieved_ids]
+            if len(com) > 0:
+                hit_check = True
+            else:
+                all_check = False
+            
+        if hit_check:
+            hit_count += 1
+        if all_check:
+            all_count += 1
+                
+    all_acc = all_count/len(df)
+    hit_acc = hit_count/len(df)
+    return hit_acc, all_acc
+
+def check(df, retrieved_list, cutoffs=[1,5,10,30]):
+    metrics = {}
+    for cutoff in cutoffs:
+        retrieved_k = [x[:cutoff] for x in retrieved_list]
+        hit_acc, all_acc = calculate_score(df, retrieved_k)
+        metrics[f"All@{cutoff}"] = all_acc
+        metrics[f"Hit@{cutoff}"] = hit_acc
+    return metrics
+    
+
 def main():
     parser = HfArgumentParser([Args])
     args: Args = parser.parse_args_into_dataclasses()[0]
@@ -316,7 +350,7 @@ def main():
 
     #print(len(indices))
 
-    retrieval_results = []
+    retrieval_results, retrieval_ids = [], []
     for indice in indices:
         # filter invalid indices
         indice = indice[indice != -1].tolist()
@@ -324,12 +358,13 @@ def main():
         #rst = [corpus[i] for i in indice]
         rst = [corpus_data['law_id'][x] + "_" + corpus_data['law_id'][x] for x in indice]
         retrieval_results.append(rst)
+        retrieval_ids.append(indice)
         #retrieval_results.append(corpus[indice])
 
     
 
-    metrics = accurate(retrieval_results, ground_truths)
-
+    #metrics = accurate(retrieval_results, ground_truths)
+    metrics = check(test_data, retrieval_ids)
     print(metrics)
 
 

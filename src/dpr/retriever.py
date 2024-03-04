@@ -24,22 +24,24 @@ class DPRRetriever():
             self.test_file = "ttest.csv"
             self.val_file = "tval.csv"
         self.save_type = save_type
-        self.dpr_tokenizer = get_tokenizer(self.args.BE_checkpoint)
+        self.dpr_tokenizer = get_tokenizer(self.args.q_checkpoint)
         if biencoder is not None:
             self.biencoder = biencoder
         elif q_encoder is not None and ctx_encoder is not None:
-            self.biencoder = BiEncoder(model_checkpoint=self.args.BE_checkpoint,
+            self.biencoder = BiEncoder(q_checkpoint=self.args.q_checkpoint,
+                                       ctx_checkpoint=self.args.ctx_checkpoint,
                                        q_encoder=q_encoder,
                                        ctx_encoder=ctx_encoder,
                                        representation=self.args.BE_representation,
                                        q_fixed=self.args.q_fixed,
                                        ctx_fixed=self.args.ctx_fixed)
         else:
-            self.biencoder = BiEncoder(model_checkpoint=self.args.BE_checkpoint,
+            self.biencoder = BiEncoder(q_checkpoint=self.args.biencoder_path + "/q",
+                                       ctx_checkpoint=self.args.biencoder_path + "/ctx",
                                        representation=self.args.BE_representation,
                                        q_fixed=self.args.q_fixed,
                                        ctx_fixed=self.args.ctx_fixed)
-            self.biencoder.load_state_dict(torch.load(self.args.biencoder_path))
+            #self.biencoder.load_state_dict(torch.load(self.args.biencoder_path))
             
         self.biencoder.to(self.device)
         self.q_encoder, self.ctx_encoder = self.biencoder.get_models()
