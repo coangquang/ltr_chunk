@@ -1,7 +1,7 @@
 import time
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
+import os
 import torch
 from torch.utils.checkpoint import get_device_states, set_device_states
 from torch.nn import DataParallel
@@ -61,12 +61,13 @@ class DPRTrainer():
         self.val_loader = val_loader
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = BiEncoder(model_checkpoint=self.args.BE_checkpoint,
-                               representation=self.args.BE_representation,
+        self.model = BiEncoder(q_checkpoint=self.args.q_checkpoint,
+                               ctx_checkpoint=self.args.ctx_checkpoint,
+                               representation=self.args.representation,
                                q_fixed=self.args.q_fixed,
                                ctx_fixed=self.args.ctx_fixed)
-        if self.args.load_path is not None:
-            self.model.load_state_dict(torch.load(self.args.load_path))
+        #if self.args.load_path is not None:
+        #    self.model.load_state_dict(torch.load(self.args.load_path))
         if self.parallel:
             print("Parallel Training")
             self.model = DataParallel(self.model)
@@ -126,9 +127,11 @@ class DPRTrainer():
                 self.best_val_acc = epoch_accuracy
                 self.patience_counter = 0
                 if self.parallel:
-                    torch.save(self.model.module.state_dict(), self.args.biencoder_path)
+                    self.model.module.encoder.save(self.args.biencoder_path)
+                    #torch.save(self.model.module.state_dict(), self.args.biencoder_path)
                 else:
-                    torch.save(self.model.state_dict(), self.args.biencoder_path)
+                    self.model.encoder.save(self.args.biencoder_path)
+                    #torch.save(self.model.state_dict(), self.args.biencoder_path)
         
             #if self.args.BE_num_epochs >= 5 and self.epoch % int(self.args.BE_num_epochs*0.2) == 0:
             if self.epoch == self.args.BE_num_epochs:

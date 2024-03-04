@@ -239,26 +239,26 @@ def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30]):
     length = len(retrieval_results)
     metrics = {}
     retrieval_results = [x[:max(cutoffs)] for x in retrieval_results]
-    acc = [0 for i in range(len(cutoffs))]
-    hit = [0 for i in range(len(cutoffs))]
+    acc = [0 for u in range(len(cutoffs))]
+    hit = [0 for u in range(len(cutoffs))]
     for i in range(length):
-        hit_check = False
+        distinct = []
+        hit_check = 0
         retrieved_ids = retrieval_results[i]
         ans_ids = ground_truths[i]
         for j in range(len(retrieved_ids)):
-            if retrieved_ids[j] in ans_ids:
-                if not hit_check:
-                    hit_check = True
-                    for k in range(len(cutoffs)):
-                        if cutoffs[k] > j:
-                            hit[k] += 1
-                ans_ids.remove(retrieved_ids[j])
-                if len(ans_ids) == 0:
-                    for k in range(len(cutoffs)):
-                        if cutoffs[k] > j:
-                            acc[k] += 1
-            else:
-                continue
+            if retrieved_ids[j] not in distinct:
+                distinct.append(retrieved_ids[j])
+                if retrieved_ids[j] in ans_ids:
+                    if hit_check == 0:
+                        for k in range(len(cutoffs)):
+                            if cutoffs[k] > j:
+                                hit[k] += 1
+                    hit_check += 1
+                    if len(ans_ids) == hit_check:
+                        for k in range(len(cutoffs)):
+                            if cutoffs[k] > j:
+                                acc[k] += 1
     
     acc = [x/length for x in acc]
     hit = [x/length for x in hit]
