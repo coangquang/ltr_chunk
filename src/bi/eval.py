@@ -275,7 +275,7 @@ def main():
     model = SharedBiEncoder(model_checkpoint=args.encoder,
                             representation=args.sentence_pooling_method,
                             fixed=True)
-
+    model.to('cuda')
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer if args.tokenizer else args.encoder)
     eval_data = pd.read_csv(args.data_path + "/tval.csv")
     test_data = pd.read_csv(args.data_path + "/ttest.csv")
