@@ -142,11 +142,11 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
 
     #if model.device == torch.device("cuda"):
     if True:
-        co = faiss.GpuClonerOptions()
-        #co = faiss.GpuMultipleClonerOptions()
+        #co = faiss.GpuClonerOptions()
+        co = faiss.GpuMultipleClonerOptions()
         #co.useFloat16 = True
-        faiss_index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, faiss_index, co)
-        #faiss_index = faiss.index_cpu_to_all_gpus(faiss_index, co)
+        #faiss_index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, faiss_index, co)
+        faiss_index = faiss.index_cpu_to_all_gpus(faiss_index, co)
 
     # NOTE: faiss only accepts float32
     logger.info("Adding embeddings...")
