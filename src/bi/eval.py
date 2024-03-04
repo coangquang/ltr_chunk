@@ -111,7 +111,7 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
                 ).to('cuda')
 
             with torch.no_grad():
-                corpus_embeddings = model.encode(d_collated) 
+                corpus_embeddings = model.encoder.get_representation(d_collated['input_ids'], d_collated['attention_mask']) 
             
             corpus_embeddings = corpus_embeddings.cpu().numpy()
             all_embeddings.append(corpus_embeddings)
@@ -178,7 +178,7 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFram
                 ).to('cuda')
 
         with torch.no_grad():
-            query_embeddings = model.encode(q_collated)
+            query_embeddings = model.encoder.get_representation(q_collated['input_ids'], q_collated['attention_mask'])
         query_embeddings = query_embeddings.cpu().numpy()
         q_embeddings.append(query_embeddings)
     
