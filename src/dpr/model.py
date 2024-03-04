@@ -5,7 +5,7 @@ from transformers import AutoModel
 class Encoder(nn.Module):
     def __init__(self, 
                  model_checkpoint,
-                 representation=0,
+                 representation='cls',
                  fixed=False):
         super(Encoder, self).__init__()
 
@@ -30,33 +30,51 @@ class Encoder(nn.Module):
                                        token_type_ids)
             
             sequence_output = outputs['last_hidden_state']
-            sequence_output = sequence_output.masked_fill(~attention_mask[..., None].bool(), 0.0)
+            #sequence_output = sequence_output.masked_fill(~attention_mask[..., None].bool(), 0.0)
         
-            if self.representation > -2:
-                output = sequence_output[:, self.representation, :]
-            elif self.representation == -10:
-                output = sequence_output.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
-            elif self.representation == -100:
-                output = outputs[1]   
+            if self.representation == 'cls':
+                output = sequence_output[:, 0, :]
+            elif self.representation == 'mean':
+                s = torch.sum(sequence_output * attention_mask.unsqueeze(-1).float(), dim=1)
+                d = attention_mask.sum(axis=1, keepdim=True).float()
+                output = s / d
+                output = torch.nn.functional.normalize(output, dim=-1)
+                #output = sequence_output.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
+            #elif self.representation == -100:
+            #    output = outputs[1]   
         return output
+    
+    def save(self, output_dir: str):
+        state_dict = self.encoder.state_dict()
+        state_dict = type(state_dict)(
+            {k: v.clone().cpu()
+             for k,
+                 v in state_dict.items()})
+        self.encoder.save_pretrained(output_dir, state_dict=state_dict)
     
 class BiEncoder(nn.Module):
     def __init__(self,
-                 model_checkpoint,
+                 q_checkpoint,
+                 ctx_checkpoint=None,
                  q_encoder=None,
                  ctx_encoder=None,
-                 representation=0,
+                 representation='cls',
                  q_fixed=False,
                  ctx_fixed=False):
         super(BiEncoder, self).__init__()
         if q_encoder == None:
-            q_encoder = Encoder(model_checkpoint,
+            q_encoder = Encoder(q_checkpoint,
                                 representation,
                                 q_fixed)
         if ctx_encoder == None:
-            ctx_encoder = Encoder(model_checkpoint,
-                                  representation,
-                                  ctx_fixed)
+            if ctx_checkpoint == None:
+                ctx_encoder = Encoder(q_checkpoint,
+                                      representation,
+                                      ctx_fixed)
+            else:
+                ctx_encoder = Encoder(ctx_checkpoint,
+                                      representation,
+                                      ctx_fixed)
         self.q_encoder = q_encoder
         self.ctx_encoder = ctx_encoder
 

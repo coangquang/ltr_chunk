@@ -285,6 +285,13 @@ def main():
     #dcorpus["full_text"] = dcorpus.parallel_apply(concat_str, axis=1)
     corpus = corpus_data['tokenized_text'].tolist()
     
+    ans_ids = test_data['ans_id'].tolist()
+    ground_truths = []
+    for sample in ans_ids:
+        ans_id = json.loads(sample)
+        temp = [corpus_data['law_id'][y[0]] + "_" + corpus_data['law_id'][y[0]] for y in ans_id]
+        ground_truths.append(temp)
+    
     faiss_index = index(
         model=model, 
         tokenizer=tokenizer,
@@ -319,12 +326,7 @@ def main():
         retrieval_results.append(rst)
         #retrieval_results.append(corpus[indice])
 
-    ans_ids = test_data['ans_id'].tolist()
-    ground_truths = []
-    for sample in ans_ids:
-        ans_id = json.load(sample)
-        temp = [corpus_data['law_id'][y[0]] + "_" + corpus_data['law_id'][y[0]] for y in ans_id]
-        ground_truths.append(temp)
+    
 
     metrics = accurate(retrieval_results, ground_truths)
 
