@@ -164,7 +164,7 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFram
     """
     #model.to('cuda')
     q_embeddings = []
-    questions = queries['tokenized_question']
+    questions = queries['tokenized_question'].tolist()
     #questions = [process_query(x) for x in questions]
     for start_index in tqdm(range(0, len(questions), batch_size), desc="Inference Embeddings",
                             disable=len(questions) < 256):
