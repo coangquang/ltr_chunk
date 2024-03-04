@@ -2,6 +2,7 @@ import faiss
 import torch
 import logging
 import datasets
+import json
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -9,10 +10,10 @@ from typing import Optional
 from dataclasses import dataclass, field
 from transformers import HfArgumentParser
 from transformers import AutoTokenizer
-from model.nor_modeling import BiEncoderModel
-from src.process import process_query, process_text, concat_str
+from model import SharedBiEncoder
+#from src.process import process_query, process_text, concat_str
 import itertools
-from pandarallel import pandarallel
+#from pandarallel import pandarallel
 
 logger = logging.getLogger(__name__)
 
@@ -35,25 +36,17 @@ class Args:
         default=False,
         metadata={'help': 'Use fp16 in inference?'}
     )
-    normalized: bool = field(
-        default=False,
-        metadata={'help': 'Use cosine similarity of not'}
-    )
-    add_instruction: bool = field(
-        default=False,
-        metadata={'help': 'Add query-side instruction?'}
-    )
     
     max_query_length: int = field(
-        default=128,
+        default=32,
         metadata={'help': 'Max query length.'}
     )
     max_passage_length: int = field(
-        default=512,
+        default=256,
         metadata={'help': 'Max passage length.'}
     )
     batch_size: int = field(
-        default=64,
+        default=128,
         metadata={'help': 'Inference batch size.'}
     )
     index_factory: str = field(
@@ -64,7 +57,10 @@ class Args:
         default=100,
         metadata={'help': 'How many neighbors to retrieve?'}
     )
-
+    data_path: str = field(
+        default="/kaggle/input/zalo-data",
+        metadata={'help': 'Path to zalo data.'}
+    )
     save_embedding: bool = field(
         default=False,
         metadata={'help': 'Save embeddings in memmap at save_dir?'}
@@ -78,7 +74,7 @@ class Args:
         metadata={'help': 'Path to save embeddings.'}
     )
 
-def index(model: BiEncoderModel, tokenizer:AutoTokenizer, corpus: datasets.Dataset, batch_size: int = 16, max_length: int=512, index_factory: str = "Flat", save_path: str = None, save_embedding: bool = False, load_embedding: bool = False):
+def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: int = 16, max_length: int=512, index_factory: str = "Flat", save_path: str = None, save_embedding: bool = False, load_embedding: bool = False):
     """
     1. Encode the entire corpus into dense embeddings; 
     2. Create faiss index; 
@@ -96,16 +92,16 @@ def index(model: BiEncoderModel, tokenizer:AutoTokenizer, corpus: datasets.Datas
         ).reshape(-1, dim)
     
     else:
-        df_corpus = pd.DataFrame()
-        df_corpus['text'] = corpus
-        pandarallel.initialize(progress_bar=True, use_memory_fs=False, nb_workers=12)
-        df_corpus['processed_text'] = df_corpus['text'].parallel_apply(process_text)
-        processed_corpus = df_corpus['processed_text'].tolist()
-        model.to('cuda')
+        #df_corpus = pd.DataFrame()
+        #df_corpus['text'] = corpus
+        #pandarallel.initialize(progress_bar=True, use_memory_fs=False, nb_workers=12)
+        #df_corpus['processed_text'] = df_corpus['text'].parallel_apply(process_text)
+        #processed_corpus = df_corpus['processed_text'].tolist()
+        #model.to('cuda')
         all_embeddings = []
         for start_index in tqdm(range(0, len(corpus), batch_size), desc="Inference Embeddings",
                                 disable=len(corpus) < 256):
-            passages_batch = processed_corpus[start_index:start_index + batch_size]
+            passages_batch = corpus[start_index:start_index + batch_size]
             d_collated = tokenizer(
                     passages_batch,
                     padding=True,
@@ -146,11 +142,11 @@ def index(model: BiEncoderModel, tokenizer:AutoTokenizer, corpus: datasets.Datas
 
     #if model.device == torch.device("cuda"):
     if True:
-        # co = faiss.GpuClonerOptions()
-        co = faiss.GpuMultipleClonerOptions()
-        co.useFloat16 = True
-        # faiss_index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, faiss_index, co)
-        faiss_index = faiss.index_cpu_to_all_gpus(faiss_index, co)
+        co = faiss.GpuClonerOptions()
+        #co = faiss.GpuMultipleClonerOptions()
+        #co.useFloat16 = True
+        faiss_index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, faiss_index, co)
+        #faiss_index = faiss.index_cpu_to_all_gpus(faiss_index, co)
 
     # NOTE: faiss only accepts float32
     logger.info("Adding embeddings...")
@@ -161,15 +157,15 @@ def index(model: BiEncoderModel, tokenizer:AutoTokenizer, corpus: datasets.Datas
     return faiss_index
 
 
-def search(model: BiEncoderModel, tokenizer:AutoTokenizer, queries: datasets, faiss_index: faiss.Index, k:int = 100, batch_size: int = 256, max_length: int=128):
+def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFrame, faiss_index: faiss.Index, k:int = 100, batch_size: int = 256, max_length: int=128):
     """
     1. Encode queries into dense embeddings;
     2. Search through faiss index
     """
     model.to('cuda')
     q_embeddings = []
-    questions = queries['query']
-    questions = [process_query(x) for x in questions]
+    questions = queries['tokenized_question']
+    #questions = [process_query(x) for x in questions]
     for start_index in tqdm(range(0, len(questions), batch_size), desc="Inference Embeddings",
                             disable=len(questions) < 256):
                     
@@ -185,13 +181,9 @@ def search(model: BiEncoderModel, tokenizer:AutoTokenizer, queries: datasets, fa
             query_embeddings = model.encode(q_collated)
         query_embeddings = query_embeddings.cpu().numpy()
         q_embeddings.append(query_embeddings)
-
-
     
     q_embeddings = np.concatenate(q_embeddings, axis=0)
     query_size = q_embeddings.shape[0]
-    #print(q_embeddings.shape)
-    #print(q_embeddings[0])
     all_scores = []
     all_indices = []
 
@@ -207,7 +199,7 @@ def search(model: BiEncoderModel, tokenizer:AutoTokenizer, queries: datasets, fa
     return all_scores, all_indices
     
     
-def evaluate(preds, labels, cutoffs=[1,10,100]):
+def evaluate(preds, labels, cutoffs=[1,10,30]):
     """
     Evaluate MRR and Recall at cutoffs.
     """
@@ -242,47 +234,56 @@ def evaluate(preds, labels, cutoffs=[1,10,100]):
         metrics[f"Recall@{cutoff}"] = recall
 
     return metrics
-
+    
+def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30]):
+    length = len(retrieval_results)
+    metrics = {}
+    retrieval_results = [x[:max(cutoffs)] for x in retrieval_results]
+    acc = [0 for i in range(len(cutoffs))]
+    hit = [0 for i in range(len(cutoffs))]
+    for i in range(length):
+        hit_check = False
+        retrieved_ids = retrieval_results[i]
+        ans_ids = ground_truths[i]
+        for j in range(len(retrieved_ids)):
+            if retrieved_ids[j] in ans_ids:
+                if not hit_check:
+                    hit_check = True
+                    for k in range(len(cutoffs)):
+                        if cutoffs[k] > j:
+                            hit[k] += 1
+                ans_ids.remove(retrieved_ids[j])
+                if len(ans_ids) == 0:
+                    for k in range(len(cutoffs)):
+                        if cutoffs[k] > j:
+                            acc[k] += 1
+            else:
+                continue
+    
+    acc = [x/length for x in acc]
+    hit = [x/length for x in hit]
+    for i, cutoff in enumerate(cutoffs):
+        metrics[f"Acc@{cutoff}"] = acc[i]
+        metrics[f"Hit@{cutoff}"] = hit[i]
+        
+    return metrics
 
 def main():
     parser = HfArgumentParser([Args])
     args: Args = parser.parse_args_into_dataclasses()[0]
     print(args)
-    model = BiEncoderModel(
-        model_name=args.encoder,
-        sentence_pooling_method=args.sentence_pooling_method,
-        normlized=args.normalized
-    )
-    #model.to('cuda')
+    model = SharedBiEncoder(model_checkpoint=args.encoder,
+                            representation=args.sentence_pooling_method,
+                            fixed=True)
+
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer if args.tokenizer else args.encoder)
-    eval_data = datasets.load_dataset("json", data_files="data/test.jsonl", split="train")
-    corpus_data = datasets.load_dataset("json", data_files='data/corpus.jsonl', split='train')
-    dcorpus = pd.DataFrame(corpus_data)
-    pandarallel.initialize(progress_bar=True, use_memory_fs=False, nb_workers=12)
-    dcorpus["full_text"] = dcorpus.parallel_apply(concat_str, axis=1)
-    corpus = dcorpus['full_text'].tolist()
-    
-    #eval_data = datasets.load_dataset("namespace-Pt/msmarco", split="dev")
-    #corpus = datasets.load_dataset("namespace-Pt/msmarco-corpus", split="train")
-    #data = datasets.load_dataset('sentence-transformers/embedding-training-data', data_files='msmarco-triplets.jsonl.gz', split='train')
-    #eval_data = data.select(range(50000))
-    #print(eval_data)
-    #print(eval_data['pos'])
-    #questions = list(itertools.chain.from_iterable(eval_data['query'])) 
-    #corpus = list(itertools.chain.from_iterable(eval_data['pos'])) 
-    #corpus = []
-    #ground_truths = []
-    #for sample in eval_data:
-    #    ground_truths.append(sample["pos"])
-    #    for x in sample["pos"]:  
-    #        corpus.append(x)
-        
-    #model = FlagModel(
-    #    args.encoder, 
-    #    query_instruction_for_retrieval="Represent this sentence for searching relevant passages: " if args.add_instruction else None,
-    #    use_fp16=args.fp16
-    #)
-    
+    eval_data = pd.read_csv(args.data_path + "/tval.csv")
+    test_data = pd.read_csv(args.data_path + "/ttest.csv")
+    corpus_data = pd.read_csv(args.data_path + "/zalo_corpus.csv")
+    #dcorpus = pd.DataFrame(corpus_data)
+    #pandarallel.initialize(progress_bar=True, use_memory_fs=False, nb_workers=12)
+    #dcorpus["full_text"] = dcorpus.parallel_apply(concat_str, axis=1)
+    corpus = corpus_data['tokenized_text'].tolist()
     
     faiss_index = index(
         model=model, 
@@ -299,7 +300,7 @@ def main():
     scores, indices = search(
         model=model, 
         tokenizer=tokenizer,
-        queries=eval_data, 
+        queries=test_data, 
         faiss_index=faiss_index, 
         k=args.k, 
         batch_size=args.batch_size, 
@@ -313,29 +314,19 @@ def main():
         # filter invalid indices
         indice = indice[indice != -1].tolist()
         #print(indice)
-        rst = [corpus[i] for i in indice]
+        #rst = [corpus[i] for i in indice]
+        rst = [corpus_data['law_id'][x] + "_" + corpus_data['law_id'][x] for x in indice]
         retrieval_results.append(rst)
         #retrieval_results.append(corpus[indice])
 
+    ans_ids = test_data['ans_id'].tolist()
     ground_truths = []
-    for sample in eval_data:
-        ground_truths.append(sample["pos"])
+    for sample in ans_ids:
+        ans_id = json.load(sample)
+        temp = [corpus_data['law_id'][y[0]] + "_" + corpus_data['law_id'][y[0]] for y in ans_id]
+        ground_truths.append(temp)
 
-    #for i in range(10):
-    #    print(i, eval_data['query'][i])
-    #    print(corpus.index(ground_truths[i][0]))
-    #    print(indices[i][:10])
-    #    print(scores[i][:10])
-    #    print(ground_truths[i])
-    #for j in indices[i][:10]:
-    #    print(j, corpus[j])
-    #print()
-    #print(retrieval_results[i])
-    #    print(scores[i][:10])
-    #    print(retrieval_results[i][:10])  
-    #from FlagEmbedding.llm_embedder.src.utils import save_json
-
-    metrics = evaluate(retrieval_results, ground_truths)
+    metrics = accurate(retrieval_results, ground_truths)
 
     print(metrics)
 
