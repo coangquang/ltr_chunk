@@ -16,8 +16,8 @@ def main():
                         help="Name or directory of pretrained model for encoder")
     parser.add_argument("--ctx_checkpoint", default=None, type=str,
                         help="Name or directory of pretrained model for encoder")
-    parser.add_argument("--BE_representation", default=0, type=int,
-                        help="Type of encoder representation (-10 for avg, -100 for pooled-output)")
+    parser.add_argument("--BE_representation", default='cls', type=str,
+                        help="Type of encoder representation")
     parser.add_argument("--BE_score", default="dot", type=str,
                         help="Type of similarity score")
     parser.add_argument("--q_fixed", default=False, type=bool,

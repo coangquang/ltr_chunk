@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Args:
     encoder: str = field(
-        default="output",
+        default="vinai/phobert-base-v2",
         metadata={'help': 'The encoder name or path.'}
     )
     tokenizer: str = field(
@@ -36,7 +36,6 @@ class Args:
         default=False,
         metadata={'help': 'Use fp16 in inference?'}
     )
-    
     max_query_length: int = field(
         default=32,
         metadata={'help': 'Max query length.'}
@@ -235,7 +234,7 @@ def evaluate(preds, labels, cutoffs=[1,10,30]):
 
     return metrics
     
-def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30, 100]):
+def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30,100]):
     length = len(retrieval_results)
     metrics = {}
     retrieval_results = [x[:max(cutoffs)] for x in retrieval_results]
@@ -292,7 +291,7 @@ def calculate_score(df, retrieved_list):
     hit_acc = hit_count/len(df)
     return hit_acc, all_acc
 
-def check(df, retrieved_list, cutoffs=[1,5,10,30]):
+def check(df, retrieved_list, cutoffs=[1,5,10,30,100]):
     metrics = {}
     for cutoff in cutoffs:
         retrieved_k = [x[:cutoff] for x in retrieved_list]
@@ -360,8 +359,6 @@ def main():
         retrieval_results.append(rst)
         retrieval_ids.append(indice)
         #retrieval_results.append(corpus[indice])
-
-    
 
     #metrics = accurate(retrieval_results, ground_truths)
     metrics = check(test_data, retrieval_ids)
