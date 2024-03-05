@@ -100,7 +100,7 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
         #model.to('cuda')
         all_embeddings = []
         for start_index in tqdm(range(0, len(corpus), batch_size), desc="Inference Embeddings",
-                                disable=len(corpus) < 256):
+                                disable=len(corpus) < batch_size):
             passages_batch = corpus[start_index:start_index + batch_size]
             d_collated = tokenizer(
                     passages_batch,
@@ -142,11 +142,11 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
 
     #if model.device == torch.device("cuda"):
     if True:
-        #co = faiss.GpuClonerOptions()
-        co = faiss.GpuMultipleClonerOptions()
+        co = faiss.GpuClonerOptions()
+        #co = faiss.GpuMultipleClonerOptions()
         #co.useFloat16 = True
-        #faiss_index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, faiss_index, co)
-        faiss_index = faiss.index_cpu_to_all_gpus(faiss_index, co)
+        faiss_index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), 0, faiss_index, co)
+        #faiss_index = faiss.index_cpu_to_all_gpus(faiss_index, co)
 
     # NOTE: faiss only accepts float32
     logger.info("Adding embeddings...")
@@ -167,7 +167,7 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFram
     questions = queries['tokenized_question'].tolist()
     #questions = [process_query(x) for x in questions]
     for start_index in tqdm(range(0, len(questions), batch_size), desc="Inference Embeddings",
-                            disable=len(questions) < 256):
+                            disable=len(questions) < batch_size):
                     
         q_collated = tokenizer(
                     questions[start_index: start_index + batch_size],
@@ -235,7 +235,7 @@ def evaluate(preds, labels, cutoffs=[1,10,30]):
 
     return metrics
     
-def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30]):
+def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30, 100]):
     length = len(retrieval_results)
     metrics = {}
     retrieval_results = [x[:max(cutoffs)] for x in retrieval_results]
