@@ -33,9 +33,9 @@ class CondenserCollator(DataCollatorForWholeWordMask):
         from transformers import DebertaV2Tokenizer
         if isinstance(self.tokenizer, (BertTokenizer, BertTokenizerFast)):
             self.whole_word_cand_indexes = self._whole_word_cand_indexes_bert
-        elif isinstance(self.tokenizer, (RobertaTokenizer, RobertaTokenizerFast, PhobertTokenizer)):
+        elif isinstance(self.tokenizer, (RobertaTokenizer, RobertaTokenizerFast)):
             self.whole_word_cand_indexes = self. _whole_word_cand_indexes_roberta
-        elif isinstance(self.tokenizer, DebertaV2Tokenizer):
+        elif isinstance(self.tokenizer, DebertaV2Tokenizer, PhobertTokenizer):
             self.whole_word_cand_indexes = self._whole_word_cand_indexes_deberta_v2
         else:
             raise NotImplementedError(f'{type(self.tokenizer)} collator not supported yet')
