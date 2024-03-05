@@ -70,7 +70,7 @@ def main():
         dval = pd.read_csv(os.path.join(args.data_dir, 'tval.csv'))
         #dtest = pd.read_csv(os.path.join(args.data_dir, 'ttest.csv'))
     corpus_tokenized = dcorpus['tokenized_text'].tolist()
-    tokenizer = get_tokenizer(args.BE_checkpoint)
+    tokenizer = get_tokenizer(args.q_checkpoint)
     print("\t* Loading data...")
     print(args)
     val_loader = build_dpr_traindata(corpus=corpus_tokenized, 
