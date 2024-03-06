@@ -168,24 +168,24 @@ def main():
 
     # Training
     if training_args.do_train:
-        model_path = (
-            model_args.model_name_or_path
-            if (model_args.model_name_or_path is not None and os.path.isdir(model_args.model_name_or_path))
-            else None
-        )
+        #model_path = (
+        #    model_args.model_name_or_path
+        #    if (model_args.model_name_or_path is not None and os.path.isdir(model_args.model_name_or_path))
+        #    else None
+        #)
         #print(model_path)
         #print(training_args)
-        dataloader = trainer.get_train_dataloader()
+        #dataloader = trainer.get_train_dataloader()
         #print(dataloader)
         #print(len(dataloader))
         #print(type(dataloader))
         #print(dataloader[0])
         #for step, inputs in enumerate(dataloader):
         #    print(inputs)
-        if model_path:
-            trainer.train(model_path=model_path)
-        else:
-            trainer.train()
+        #if model_path:
+        trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
+        #else:
+        #trainer.train()
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
     # Evaluation
@@ -208,10 +208,10 @@ def main():
 
     return results
 
-
+'''
 def _mp_fn(index):
     # For xla_spawn (TPUs)
-    main()
+    main()'''
 
 
 if __name__ == "__main__":
