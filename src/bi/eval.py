@@ -60,6 +60,10 @@ class Args:
         default="/kaggle/input/zalo-data",
         metadata={'help': 'Path to zalo data.'}
     )
+    data_type: str = field(
+        default="test",
+        metadata={'help': 'Type data to test'}
+    )
     save_embedding: bool = field(
         default=False,
         metadata={'help': 'Save embeddings in memmap at save_dir?'}
@@ -310,8 +314,19 @@ def main():
                             fixed=True)
     model.to('cuda')
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer if args.tokenizer else args.encoder)
-    eval_data = pd.read_csv(args.data_path + "/tval.csv")
-    test_data = pd.read_csv(args.data_path + "/ttest.csv")
+    
+    if args.data_type == 'eval':
+        test_data = pd.read_csv(args.data_path + "/tval.csv") 
+    elif args.data_type == 'train':
+        test_data = pd.read_csv(args.data_path + "/ttrain.csv")
+    elif args.data_type == 'all':
+        data1 = pd.read_csv(args.data_path + "/ttrain.csv")
+        data2 = pd.read_csv(args.data_path + "/ttest.csv")
+        data3 = pd.read_csv(args.data_path + "/tval.csv")
+        test_data = pd.concat([data1, data3, data2], ignore_index=True)
+          
+    else:
+        test_data = pd.read_csv(args.data_path + "/ttest.csv")
     corpus_data = pd.read_csv(args.data_path + "/zalo_corpus.csv")
     #dcorpus = pd.DataFrame(corpus_data)
     #pandarallel.initialize(progress_bar=True, use_memory_fs=False, nb_workers=12)
