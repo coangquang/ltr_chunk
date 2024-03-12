@@ -302,8 +302,8 @@ def main():
     #ans_text_ids = [json.loads(test_data['best_ans_text_id'][i]) for i in range(len(test_data))]
     ans_text_ids = []
     for i in range(len(test_data)):
-        print(test_data['best_ans_text_id'][i])
-        ans_text_ids.append(json.loads(i))
+        print(test_data['best_ans_text_id'][i], type(test_data['best_ans_text_id'][i]))
+        ans_text_ids.append(json.loads(test_data['best_ans_text_id'][i]))
     #ans_text_ids = [json.loads(sample) for sample in ans_text_ids]
     ground_truths = []
     for sample in ans_text_ids:
