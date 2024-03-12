@@ -346,6 +346,7 @@ def main():
     metrics = check(test_data, retrieval_ids)
     print(metrics)
     metrics = evaluate(retrieval_results, ground_truths)
+    print(metrics)
 
 
 if __name__ == "__main__":
