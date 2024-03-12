@@ -306,7 +306,7 @@ def main():
     #ans_text_ids = [json.loads(sample) for sample in ans_text_ids]
     ground_truths = []
     for sample in ans_ids:
-        temp = [corpus_data['law_id'][y] + "_" + corpus_data['article_id'][y] for y in sample]
+        temp = [corpus_data['law_id'][y] + "_" + str(corpus_data['article_id'][y]) for y in sample]
         ground_truths.append(temp)
     
     faiss_index = index(
@@ -339,7 +339,7 @@ def main():
         indice = indice[indice != -1].tolist()
         rst = []
         for x in indice:
-            temp = corpus_data['law_id'][x] + "_" + corpus_data['article_id'][x]
+            temp = corpus_data['law_id'][x] + "_" + str(corpus_data['article_id'][x])
             if temp not in rst:
                 rst.append(temp)
         retrieval_results.append(rst)
