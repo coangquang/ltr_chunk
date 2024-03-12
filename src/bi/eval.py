@@ -300,14 +300,13 @@ def main():
     corpus = corpus_data['tokenized_text'].tolist()
     
     #ans_text_ids = [json.loads(test_data['best_ans_text_id'][i]) for i in range(len(test_data))]
-    ans_text_ids = []
+    ans_ids = []
     for i in range(len(test_data)):
-        print(test_data['best_ans_text_id'][i], type(test_data['best_ans_text_id'][i]))
-        ans_text_ids.append(json.load(test_data['best_ans_text_id'][i]))
+        ans_ids.append(json.loads(test_data['best_ans_id'][i]))
     #ans_text_ids = [json.loads(sample) for sample in ans_text_ids]
     ground_truths = []
-    for sample in ans_text_ids:
-        temp = ["_".join(y.split("_")[:2]) for y in sample]
+    for sample in ans_ids:
+        temp = [corpus_data['law_id'][y] + "_" + corpus_data['article_id'][y] for y in sample]
         ground_truths.append(temp)
     
     faiss_index = index(
