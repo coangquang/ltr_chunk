@@ -53,7 +53,7 @@ class Args:
         metadata={'help': 'Faiss index factory.'}
     )
     k: int = field(
-        default=100,
+        default=1000,
         metadata={'help': 'How many neighbors to retrieve?'}
     )
     data_path: str = field(
@@ -201,8 +201,7 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFram
     all_indices = np.concatenate(all_indices, axis=0)
     return all_scores, all_indices
     
-    
-def evaluate(preds, labels, cutoffs=[1,10,30]):
+def evaluate(preds, labels, cutoffs=[1,5,10,30,100]):
     """
     Evaluate MRR and Recall at cutoffs.
     """
@@ -236,39 +235,6 @@ def evaluate(preds, labels, cutoffs=[1,10,30]):
         recall = recalls[i]
         metrics[f"Recall@{cutoff}"] = recall
 
-    return metrics
-    
-def accurate(retrieval_results, ground_truths, cutoffs=[1,5,10,30,100]):
-    length = len(retrieval_results)
-    metrics = {}
-    retrieval_results = [x[:max(cutoffs)] for x in retrieval_results]
-    acc = [0 for u in range(len(cutoffs))]
-    hit = [0 for u in range(len(cutoffs))]
-    for i in range(length):
-        distinct = []
-        hit_check = 0
-        retrieved_ids = retrieval_results[i]
-        ans_ids = ground_truths[i]
-        for j in range(len(retrieved_ids)):
-            if retrieved_ids[j] not in distinct:
-                distinct.append(retrieved_ids[j])
-                if retrieved_ids[j] in ans_ids:
-                    if hit_check == 0:
-                        for k in range(len(cutoffs)):
-                            if cutoffs[k] > j:
-                                hit[k] += 1
-                    hit_check += 1
-                    if len(ans_ids) == hit_check:
-                        for k in range(len(cutoffs)):
-                            if cutoffs[k] > j:
-                                acc[k] += 1
-    
-    acc = [x/length for x in acc]
-    hit = [x/length for x in hit]
-    for i, cutoff in enumerate(cutoffs):
-        metrics[f"Acc@{cutoff}"] = acc[i]
-        metrics[f"Hit@{cutoff}"] = hit[i]
-        
     return metrics
 
 def calculate_score(df, retrieved_list):
@@ -333,11 +299,12 @@ def main():
     #dcorpus["full_text"] = dcorpus.parallel_apply(concat_str, axis=1)
     corpus = corpus_data['tokenized_text'].tolist()
     
-    ans_ids = test_data['ans_id'].tolist()
+    ans_text_ids = test_data['best_ans_text_id'].tolist()
+    #ans_text_ids = [json.loads(sample) for sample in ans_text_ids]
     ground_truths = []
-    for sample in ans_ids:
+    for sample in ans_text_ids:
         ans_id = json.loads(sample)
-        temp = [corpus_data['law_id'][y[0]] + "_" + corpus_data['law_id'][y[0]] for y in ans_id]
+        temp = ["_".join(y.split("_")[:2]) for y in ans_id]
         ground_truths.append(temp)
     
     faiss_index = index(
@@ -368,16 +335,17 @@ def main():
     for indice in indices:
         # filter invalid indices
         indice = indice[indice != -1].tolist()
-        #print(indice)
-        #rst = [corpus[i] for i in indice]
-        rst = [corpus_data['law_id'][x] + "_" + corpus_data['law_id'][x] for x in indice]
+        rst = []
+        for x in indice:
+            temp = corpus_data['law_id'][x] + "_" + corpus_data['article_id'][x]
+            if temp not in rst:
+                rst.append(temp)
         retrieval_results.append(rst)
         retrieval_ids.append(indice)
-        #retrieval_results.append(corpus[indice])
-
-    #metrics = accurate(retrieval_results, ground_truths)
+    
     metrics = check(test_data, retrieval_ids)
     print(metrics)
+    metrics = evaluate(retrieval_results, ground_truths)
 
 
 if __name__ == "__main__":
