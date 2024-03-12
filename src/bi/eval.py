@@ -299,12 +299,11 @@ def main():
     #dcorpus["full_text"] = dcorpus.parallel_apply(concat_str, axis=1)
     corpus = corpus_data['tokenized_text'].tolist()
     
-    ans_text_ids = test_data['best_ans_text_id'].tolist()
+    ans_text_ids = [json.loads(test_data['best_ans_text_id'][i]) for i in range(len(test_data))]
     #ans_text_ids = [json.loads(sample) for sample in ans_text_ids]
     ground_truths = []
     for sample in ans_text_ids:
-        ans_id = json.loads(sample)
-        temp = ["_".join(y.split("_")[:2]) for y in ans_id]
+        temp = ["_".join(y.split("_")[:2]) for y in sample]
         ground_truths.append(temp)
     
     faiss_index = index(
