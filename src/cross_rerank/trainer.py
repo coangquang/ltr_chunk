@@ -28,6 +28,7 @@ class RerankerTrainer(Trainer):
 
     def compute_loss(self, model, inputs, return_outputs=False):
         print(inputs)
+        print(inputs['input_ids'].size())
         outputs: SequenceClassifierOutput = model(inputs)
         print(outputs)
         loss = outputs.loss
