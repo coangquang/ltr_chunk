@@ -27,11 +27,11 @@ class RerankerTrainer(Trainer):
             self.tokenizer.save_pretrained(output_dir)
 
     def compute_loss(self, model, inputs, return_outputs=False):
-        print(inputs)
-        print(inputs['input_ids'].size())
+        #print(inputs)
+        #print(inputs['input_ids'].size())
         outputs: SequenceClassifierOutput = model(inputs)
         loss = outputs.loss['logits'].sum()
-        print(loss)
+        #print(loss)
 
         if self.model.training:
             labels = inputs['labels']
