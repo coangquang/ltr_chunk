@@ -53,7 +53,7 @@ class CrossEncoderDataLoader:
         batch_dict = self.tokenizer(input_queries,
                                     text_pair=input_docs,
                                     max_length=self.args.rerank_max_length,
-                                    padding=PaddingStrategy.DO_NOT_PAD,
+                                    padding=True,
                                     truncation=True)
 
         packed_batch_dict = {}
