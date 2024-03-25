@@ -22,7 +22,7 @@ class Reranker(nn.Module):
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> SequenceClassifierOutput:
         input_batch_dict = {k: v for k, v in batch.items() if k != 'labels'}
-
+        print(input_batch_dict)
         if self.args.rerank_forward_factor > 1:
             assert torch.sum(batch['labels']).long().item() == 0
             assert all(len(v.shape) == 2 for v in input_batch_dict.values())
