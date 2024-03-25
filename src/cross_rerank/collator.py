@@ -10,6 +10,7 @@ class CrossEncoderCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> BatchEncoding:
         unpack_features = []
+        print(features)
         for ex in features:
             keys = list(ex.keys())
             # assert all(len(ex[k]) == 8 for k in keys)
@@ -18,7 +19,7 @@ class CrossEncoderCollator(DataCollatorWithPadding):
 
         collated_batch_dict = self.tokenizer.pad(
             unpack_features,
-            padding=True,
+            padding=self.padding,
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors=self.return_tensors)
 
