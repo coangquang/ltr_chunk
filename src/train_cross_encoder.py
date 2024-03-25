@@ -8,7 +8,6 @@ from transformers import (
     AutoTokenizer,
     HfArgumentParser,
     EvalPrediction,
-    Trainer,
     set_seed,
     PreTrainedTokenizerFast
 )
@@ -67,7 +66,7 @@ def main():
     train_dataset = rerank_data_loader.train_dataset
     eval_dataset = rerank_data_loader.eval_dataset
 
-    trainer: Trainer = RerankerTrainer(
+    trainer = RerankerTrainer(
         model=model,
         args=args,
         train_dataset=train_dataset if args.do_train else None,
