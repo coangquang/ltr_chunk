@@ -10,7 +10,6 @@ from .utils import AverageMeter
 
 
 class RerankerTrainer(Trainer):
-
     def __init__(self, *pargs, **kwargs):
         super(RerankerTrainer, self).__init__(*pargs, **kwargs)
 
@@ -28,7 +27,9 @@ class RerankerTrainer(Trainer):
             self.tokenizer.save_pretrained(output_dir)
 
     def compute_loss(self, model, inputs, return_outputs=False):
+        print(inputs)
         outputs: SequenceClassifierOutput = model(inputs)
+        print(outputs)
         loss = outputs.loss
 
         if self.model.training:
