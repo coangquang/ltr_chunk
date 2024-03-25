@@ -58,7 +58,7 @@ class CrossEncoderDataLoader:
 
         packed_batch_dict = {}
         for k in batch_dict:
-            print(k)
+            #print(k)
             packed_batch_dict[k] = []
             assert len(examples['query']) * self.args.train_n_passages == len(batch_dict[k])
             for idx in range(len(examples['query'])):

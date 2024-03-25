@@ -18,7 +18,7 @@ class CrossEncoderCollator(DataCollatorWithPadding):
 
         collated_batch_dict = self.tokenizer.pad(
             unpack_features,
-            padding=self.padding,
+            padding=True,
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors=self.return_tensors)
 
