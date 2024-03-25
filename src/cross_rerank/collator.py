@@ -10,13 +10,13 @@ class CrossEncoderCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> BatchEncoding:
         unpack_features = []
-        print(features)
         for ex in features:
             keys = list(ex.keys())
             # assert all(len(ex[k]) == 8 for k in keys)
             for idx in range(len(ex[keys[0]])):
                 unpack_features.append({k: ex[k][idx] for k in keys})
 
+        print(unpack_features)
         collated_batch_dict = self.tokenizer.pad(
             unpack_features,
             padding=self.padding,
@@ -24,4 +24,5 @@ class CrossEncoderCollator(DataCollatorWithPadding):
             return_tensors=self.return_tensors)
 
         collated_batch_dict['labels'] = torch.zeros(len(features), dtype=torch.long)
+        print(collated_batch_dict)
         return collated_batch_dict
