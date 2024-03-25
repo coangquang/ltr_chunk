@@ -3,8 +3,8 @@ import pytrec_eval
 
 from typing import List, Dict, Tuple
 
-from data_utils import ScoredDoc
-from logger_config import logger
+from .data_utils import ScoredDoc
+from .logger_config import logger
 
 
 def trec_eval(qrels: Dict[str, Dict[str, int]],

@@ -4,9 +4,9 @@ from typing import Optional, Union
 from transformers.trainer import Trainer
 from transformers.modeling_outputs import SequenceClassifierOutput
 
-from logger_config import logger
-from metrics import accuracy
-from utils import AverageMeter
+from .logger_config import logger
+from .metrics import accuracy
+from .utils import AverageMeter
 
 
 class RerankerTrainer(Trainer):

@@ -7,9 +7,9 @@ from datasets import load_dataset, DatasetDict, Dataset
 from transformers.file_utils import PaddingStrategy
 from transformers import PreTrainedTokenizerFast, Trainer
 
-from config import Arguments
-from logger_config import logger
-from loader_utils import group_doc_ids
+from .config import Arguments
+from .logger_config import logger
+from .loader_utils import group_doc_ids
 
 
 class CrossEncoderDataLoader:

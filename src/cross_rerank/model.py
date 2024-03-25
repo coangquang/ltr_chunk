@@ -8,7 +8,7 @@ from transformers import (
 )
 from transformers.modeling_outputs import SequenceClassifierOutput
 
-from config import Arguments
+from .config import Arguments
 
 
 class Reranker(nn.Module):

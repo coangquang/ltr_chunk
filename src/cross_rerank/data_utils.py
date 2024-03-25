@@ -7,9 +7,9 @@ from typing import Dict, List, Any
 from datasets import load_dataset, Dataset
 from dataclasses import dataclass, field
 
-from logger_config import logger
-from config import Arguments
-from utils import save_json_to_file
+from .logger_config import logger
+from .config import Arguments
+from .utils import save_json_to_file
 
 
 @dataclass

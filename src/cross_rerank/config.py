@@ -5,7 +5,7 @@ from typing import Optional
 from transformers import TrainingArguments
 
 
-from logger_config import logger
+from .logger_config import logger
 
 
 @dataclass
