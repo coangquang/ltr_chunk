@@ -60,7 +60,7 @@ def main():
 
     data_collator = CrossEncoderCollator(
         tokenizer=tokenizer,
-        pad_to_multiple_of=8 if args.fp16 else None)
+        pad_to_multiple_of=256 if args.fp16 else 256)
 
     rerank_data_loader = CrossEncoderDataLoader(args=args, tokenizer=tokenizer)
     train_dataset = rerank_data_loader.train_dataset
