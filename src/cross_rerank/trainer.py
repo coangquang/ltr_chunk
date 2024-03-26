@@ -30,8 +30,8 @@ class RerankerTrainer(Trainer):
         #print(inputs)
         #print(inputs['input_ids'].size())
         outputs: SequenceClassifierOutput = model(inputs)
-        loss = outputs.loss['logits']
-        #print(loss)
+        loss = outputs.loss
+        print(loss)
 
         if self.model.training:
             labels = inputs['labels']

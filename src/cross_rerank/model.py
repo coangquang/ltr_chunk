@@ -9,6 +9,7 @@ from transformers import (
 from transformers.modeling_outputs import SequenceClassifierOutput
 
 from .config import Arguments
+from .loss import CrossEncoderNllLoss
 
 
 class Reranker(nn.Module):
@@ -18,6 +19,7 @@ class Reranker(nn.Module):
         self.args = args
 
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
+        self.contrastive = CrossEncoderNllLoss()
         self.kl_loss_fn = torch.nn.KLDivLoss(reduction="batchmean", log_target=True)
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> SequenceClassifierOutput:
@@ -69,7 +71,8 @@ class Reranker(nn.Module):
             outputs.logits = outputs.logits.view(-1, n_psg_per_query)
             print(outputs.logits)
             print(batch['labels'])
-            loss = self.cross_entropy(outputs.logits, batch['labels'])
+            #loss = self.cross_entropy(outputs.logits, batch['labels'])
+            loss = self.contrastive.calc(outputs.logits, batch['labels'])
             outputs.loss = loss
 
         return outputs
