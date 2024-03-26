@@ -35,10 +35,10 @@ class RerankerTrainer(Trainer):
 
         if self.model.training:
             labels = inputs['labels']
-            print(labels)
-            print(outputs)
+            #print(labels)
+            #print(outputs)
             step_acc = accuracy(output=outputs.logits.detach(), target=labels)[0]
-            print(step_acc)
+            #print(step_acc)
             self.acc_meter.update(step_acc)
             if self.state.global_step > 0 and self.state.global_step % self.args.logging_steps == 0:
                 logger.info('step: {}, {}'.format(self.state.global_step, self.acc_meter))

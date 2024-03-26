@@ -55,7 +55,7 @@ class Reranker(nn.Module):
             input_batch_dict = {k: torch.cat([v, v], dim=0) for k, v in input_batch_dict.items()}
 
         outputs: SequenceClassifierOutput = self.hf_model(**input_batch_dict, return_dict=True)
-        print(outputs)
+        #print(outputs)
         if self.args.rerank_use_rdrop and self.training:
             logits = outputs.logits.view(2, -1, n_psg_per_query)
             outputs.logits = logits[0, :, :].contiguous()
@@ -70,8 +70,8 @@ class Reranker(nn.Module):
             outputs.logits = outputs.logits.view(-1, n_psg_per_query)
             #loss = self.cross_entropy(outputs.logits, batch['labels'])
             loss = self.contrastive.calc(outputs.logits, batch['labels'])
-            outputs.loss = loss
-            print(loss)
+            #outputs.loss = loss
+            #print(loss)
 
         return outputs, loss
 
