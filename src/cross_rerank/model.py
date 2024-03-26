@@ -23,7 +23,7 @@ class Reranker(nn.Module):
         self.kl_loss_fn = torch.nn.KLDivLoss(reduction="batchmean", log_target=True)
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> SequenceClassifierOutput:
-        input_batch_dict = {k: v for k, v in batch.items() if k != 'labels'}
+        input_batch_dict = {k: v.to(self.hf_model.device) for k, v in batch.items() if k != 'labels'}
         print(input_batch_dict)
         if self.args.rerank_forward_factor > 1:
             assert torch.sum(batch['labels']).long().item() == 0
