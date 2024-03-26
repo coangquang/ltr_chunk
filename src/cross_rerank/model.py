@@ -25,7 +25,7 @@ class Reranker(nn.Module):
     def forward(self, batch: Dict[str, torch.Tensor]) -> SequenceClassifierOutput:
         input_batch_dict = {k: v.to(self.hf_model.device) for k, v in batch.items() if k != 'labels'}
         
-        print(input_batch_dict)
+        #print(input_batch_dict)
         if self.args.rerank_forward_factor > 1:
             assert torch.sum(batch['labels']).long().item() == 0
             assert all(len(v.shape) == 2 for v in input_batch_dict.values())
@@ -56,7 +56,7 @@ class Reranker(nn.Module):
             input_batch_dict = {k: torch.cat([v, v], dim=0) for k, v in input_batch_dict.items()}
 
         outputs: SequenceClassifierOutput = self.hf_model(**input_batch_dict, return_dict=True)
-        #print(outputs)
+        print(outputs)
         if self.args.rerank_use_rdrop and self.training:
             logits = outputs.logits.view(2, -1, n_psg_per_query)
             outputs.logits = logits[0, :, :].contiguous()
@@ -68,9 +68,10 @@ class Reranker(nn.Module):
 
             outputs.loss = rdrop_loss + ce_loss
         else:
+            outputs.to('cuda:0')
             outputs.logits = outputs.logits.view(-1, n_psg_per_query)
             #loss = self.cross_entropy(outputs.logits, batch['labels'])
-            loss = self.contrastive.calc(outputs.logits, batch['labels'].to(self.hf_model.device))
+            loss = self.contrastive.calc(outputs.logits, batch['labels'])
             #outputs.loss = loss
             #print(loss)
 
