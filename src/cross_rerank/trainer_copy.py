@@ -29,13 +29,16 @@ class RerankerTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False):
         #print(inputs)
         #print(inputs['input_ids'].size())
-        input_ids = inputs['input_ids']
-        attention_mask = inputs['attention_mask']
-        token_type_ids = inputs['token_type_ids']
-        labels = inputs['labels']
-        outputs, loss = model(input_ids, attention_mask, token_type_ids)
+        #input_ids = inputs['input_ids']
+        #attention_mask = input['attention_mask']
+        outputs, loss = model(inputs)
+        #loss = outputs.loss
+        #print(loss)
 
         if self.model.training:
+            labels = inputs['labels']
+            #print(labels)
+            #print(outputs)
             step_acc = accuracy(output=outputs.logits.detach(), target=labels)[0]
             #print(step_acc)
             self.acc_meter.update(step_acc)
