@@ -35,8 +35,8 @@ class RerankerTrainer(Trainer):
 
         if self.model.training:
             labels = inputs['labels']
-            #print(labels)
-            #print(outputs)
+            print(labels)
+            print(outputs)
             step_acc = accuracy(output=outputs.logits.detach(), target=labels)[0]
             #print(step_acc)
             self.acc_meter.update(step_acc)
