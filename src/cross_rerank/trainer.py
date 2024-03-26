@@ -31,7 +31,7 @@ class RerankerTrainer(Trainer):
         #print(inputs['input_ids'].size())
         outputs, loss = model(inputs)
         #loss = outputs.loss
-        #print(loss)
+        print(loss)
 
         if self.model.training:
             labels = inputs['labels']

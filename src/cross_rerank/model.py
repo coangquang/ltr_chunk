@@ -68,10 +68,9 @@ class Reranker(nn.Module):
 
             outputs.loss = rdrop_loss + ce_loss
         else:
-            outputs.to('cuda:0')
             outputs.logits = outputs.logits.view(-1, n_psg_per_query)
             #loss = self.cross_entropy(outputs.logits, batch['labels'])
-            loss = self.contrastive.calc(outputs.logits, batch['labels'])
+            loss = self.contrastive.calc(outputs.logits, batch['labels'].to(self.hf_model.device))
             #outputs.loss = loss
             #print(loss)
 
