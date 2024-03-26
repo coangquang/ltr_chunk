@@ -208,7 +208,7 @@ class Arguments(TrainingArguments):
                 assert not self.kd_mask_hn, 'Use scaled loss only works with not masking out hard negatives'
 
         if torch.cuda.device_count() <= 1:
-            self.logging_steps = min(10, self.logging_steps)
+            self.logging_steps = min(50, self.logging_steps)
 
         super(Arguments, self).__post_init__()
 
