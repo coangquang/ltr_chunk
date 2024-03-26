@@ -71,8 +71,9 @@ class Reranker(nn.Module):
             #loss = self.cross_entropy(outputs.logits, batch['labels'])
             loss = self.contrastive.calc(outputs.logits, batch['labels'])
             outputs.loss = loss
+            print(loss)
 
-        return outputs
+        return outputs, loss
 
     @classmethod
     def from_pretrained(cls, all_args: Arguments, *args, **kwargs):
