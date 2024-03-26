@@ -1,5 +1,5 @@
 import torch
-
+import transformers
 from dataclasses import dataclass
 from typing import List, Dict, Any
 from transformers import BatchEncoding, DataCollatorWithPadding
@@ -16,13 +16,15 @@ class CrossEncoderCollator(DataCollatorWithPadding):
             for idx in range(len(ex[keys[0]])):
                 unpack_features.append({k: ex[k][idx] for k in keys})
 
-        #print(unpack_features)
+        old_level = transformers.logging.get_verbosity()
+        transformers.logging.set_verbosity_error()
         collated_batch_dict = self.tokenizer.pad(
             unpack_features,
             padding=self.padding,
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors=self.return_tensors)
-
+        transformers.logging.set_verbosity(old_level)
+        
         collated_batch_dict['labels'] = torch.zeros(len(features), dtype=torch.long)
-        #print(collated_batch_dict)
+
         return collated_batch_dict

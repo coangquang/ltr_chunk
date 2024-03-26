@@ -1,7 +1,7 @@
 import os.path
 import random
 import pandas as pd
-
+import transformers
 from typing import Tuple, Dict, List, Optional
 from datasets import load_dataset, DatasetDict, Dataset
 from transformers.file_utils import PaddingStrategy
@@ -50,15 +50,17 @@ class CrossEncoderDataLoader:
             input_docs.append(self.corpus['tokenized_text'][doc_id])
             input_queries.append(examples['query'][idx // self.args.train_n_passages])
 
+        old_level = transformers.logging.get_verbosity()
+        transformers.logging.set_verbosity_error()
         batch_dict = self.tokenizer(input_queries,
                                     text_pair=input_docs,
                                     max_length=self.args.rerank_max_length,
                                     padding=PaddingStrategy.DO_NOT_PAD,
                                     truncation=True)
-
+        transformers.logging.set_verbosity(old_level)
+        
         packed_batch_dict = {}
         for k in batch_dict:
-            #print(k)
             packed_batch_dict[k] = []
             assert len(examples['query']) * self.args.train_n_passages == len(batch_dict[k])
             for idx in range(len(examples['query'])):
