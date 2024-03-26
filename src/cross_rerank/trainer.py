@@ -33,7 +33,7 @@ class RerankerTrainer(Trainer):
         attention_mask = inputs['attention_mask']
         token_type_ids = inputs['token_type_ids']
         labels = inputs['labels']
-        outputs, loss = model(input_ids, attention_mask, token_type_ids)
+        outputs, loss = model(input_ids, attention_mask, token_type_ids, labels)
 
         if self.model.training:
             step_acc = accuracy(output=outputs.logits.detach(), target=labels)[0]
