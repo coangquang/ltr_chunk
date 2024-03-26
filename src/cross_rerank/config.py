@@ -154,6 +154,14 @@ class Arguments(TrainingArguments):
             "help": "The maximum total input sequence length after tokenization for passage."
         },
     )
+    
+    chunk_size: int = field(
+        default=8,
+        metadata={
+            "help": "The maximum total chunk"
+        },
+    )
+    
     max_train_samples: Optional[int] = field(
         default=None,
         metadata={

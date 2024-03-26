@@ -10,8 +10,7 @@ from transformers.modeling_outputs import SequenceClassifierOutput
 
 from .config import Arguments
 from .loss import CrossEncoderNllLoss
-
-
+        
 class Reranker(nn.Module):
     def __init__(self, hf_model: PreTrainedModel, args: Arguments):
         super().__init__()
@@ -22,14 +21,14 @@ class Reranker(nn.Module):
         #self.contrastive = CrossEncoderNllLoss()
         #self.kl_loss_fn = torch.nn.KLDivLoss(reduction="batchmean", log_target=True)
 
-    def forward(self, input_ids, attention_mask, token_type_ids, labels) -> SequenceClassifierOutput:
-        n_psg_per_query = self.args.train_n_passages // self.args.rerank_forward_factor
+    def forward(self, input_ids, attention_mask, token_type_ids) -> SequenceClassifierOutput:
+        #n_psg_per_query = self.args.train_n_passages // self.args.rerank_forward_factor
 
         outputs: SequenceClassifierOutput = self.hf_model(input_ids, attention_mask, token_type_ids, return_dict=True)
-        outputs.logits = outputs.logits.view(-1, n_psg_per_query)
-        loss = self.cross_entropy(outputs.logits, labels)
+        #outputs.logits = outputs.logits.view(-1, n_psg_per_query)
+        #loss = self.cross_entropy(outputs.logits, labels)
 
-        return outputs, loss
+        return outputs#, loss
 
     @classmethod
     def from_pretrained(cls, all_args: Arguments, *args, **kwargs):
