@@ -65,8 +65,10 @@ class Reranker(nn.Module):
 
             outputs.loss = rdrop_loss + ce_loss
         else:
+            print(outputs.logits)
             outputs.logits = outputs.logits.view(-1, n_psg_per_query)
             print(outputs.logits)
+            print(batch('labels'))
             loss = self.cross_entropy(outputs.logits, batch['labels'])
             outputs.loss = loss
 
