@@ -37,7 +37,6 @@ class RerankerTrainer(Trainer):
             labels = inputs['labels']
             print(labels)
             print(outputs)
-            print(outputs.logits.detach())
             step_acc = accuracy(output=outputs.logits.detach(), target=labels)[0]
             print(step_acc)
             self.acc_meter.update(step_acc)
