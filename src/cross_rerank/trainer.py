@@ -103,6 +103,8 @@ class RerankerTrainer(Trainer):
         for id_chunk, attn_chunk, type_chunk, grad, rnd in zip(id_chunks, attn_mask_chunks, type_ids_chunks, grads, rnds):
             with rnd:
                 chunk_reps = self.model(id_chunk, attn_chunk, type_chunk).logits
+                print(chunk_reps.size())
+                print(grad.size())
                 surrogate = torch.dot(chunk_reps.flatten().float(), grad.flatten())
                 
             self.accelerator.backward(surrogate)
