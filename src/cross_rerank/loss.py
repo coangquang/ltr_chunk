@@ -21,7 +21,7 @@ class CrossEncoderNllLoss(object):
         #    positive_idx_per_question = [i for i in range(q_num)]
 
         softmax_scores = F.log_softmax(logits, dim=1)
-
+        print("softmax", softmax_scores)
         loss = F.nll_loss(
             softmax_scores,
             labels,
