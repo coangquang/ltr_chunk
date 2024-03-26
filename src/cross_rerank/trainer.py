@@ -6,7 +6,7 @@ from torch.utils.checkpoint import get_device_states, set_device_states
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 from transformers.trainer import Trainer
 from transformers.modeling_outputs import SequenceClassifierOutput
-
+from collections.abc import Mapping
 from .logger_config import logger
 from .metrics import accuracy
 from .utils import AverageMeter
