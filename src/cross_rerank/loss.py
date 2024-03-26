@@ -22,12 +22,14 @@ class CrossEncoderNllLoss(object):
 
         softmax_scores = F.log_softmax(logits, dim=1)
         print("softmax", softmax_scores)
+        print(softmax_scores.size())
+        print(labels.size())
         loss = F.nll_loss(
             softmax_scores,
             labels,
             reduction="mean",
         )
-
+        print(loss)
         #max_score, max_idxs = torch.max(softmax_scores, 1)
         #correct_predictions_count = (max_idxs == torch.tensor(positive_idx_per_question).to(max_idxs.device)).sum()
         return loss#, correct_predictions_count
