@@ -61,12 +61,6 @@ class RerankerTrainer(Trainer):
         with self.compute_loss_context_manager():
             loss, surrogate = self.compute_loss(model, inputs)
 
-        if self.args.n_gpu > 1:
-            loss = loss.mean()  # mean() to average on multi-gpu parallel training
-
-        self.accelerator.backward(loss)
-        self.accelerator.backward(surrogate)
-
         return loss.detach() / self.args.gradient_accumulation_steps
 
     def compute_loss(self, model, inputs, return_outputs=False):
@@ -96,7 +90,10 @@ class RerankerTrainer(Trainer):
         all_reps = all_reps.float().detach().requires_grad_()
         loss = self.model.cross_entropy(all_reps, labels)
         
-        
+        if self.args.n_gpu > 1:
+            loss = loss.mean()  # mean() to average on multi-gpu parallel training
+
+        self.accelerator.backward(loss)
         #if self.args.gradient_accumulation_steps > 1:
         #    loss = loss / self.args.gradient_accumulation_steps
         #loss.backward()
@@ -108,7 +105,7 @@ class RerankerTrainer(Trainer):
                 chunk_reps = self.model(id_chunk, attn_chunk, type_chunk)
                 surrogate = torch.dot(chunk_reps.flatten().float(), grad.flatten())
                 
-            #surrogate.backward()
+            self.accelerator.backward(surrogate)
                 
         #outputs, loss = model(input_ids, attention_mask, token_type_ids, labels)
 
@@ -121,7 +118,43 @@ class RerankerTrainer(Trainer):
 
             self._reset_meters_if_needed()
 
-        return (loss, all_reps, surrogate) if return_outputs else (loss, surrogate)
+        return (loss, all_reps) if return_outputs else (loss, surrogate)
+    
+    def compute_loss_pred(self, model, inputs, return_outputs=False):
+        #print(inputs)
+        #print(inputs['input_ids'].size())
+        n_psg_per_query = self.args.train_n_passages // self.args.rerank_forward_factor
+        input_ids = inputs['input_ids']
+        attention_mask = inputs['attention_mask']
+        token_type_ids = inputs['token_type_ids']
+        labels = inputs['labels']
+        
+        all_reps, rnds = [], []
+            
+        id_chunks = input_ids.split(self.args.chunk_size)
+        attn_mask_chunks = attention_mask.split(self.args.chunk_size)
+            
+        type_ids_chunks = token_type_ids.split(self.args.chunk_size)
+            
+        for id_chunk, attn_chunk, type_chunk in zip(id_chunks, attn_mask_chunks, type_ids_chunks):
+            rnds.append(RandContext(id_chunk, attn_chunk, type_chunk))
+            with torch.no_grad():
+                chunk_reps = self.model(id_chunk, attn_chunk, type_chunk).logits
+            all_reps.append(chunk_reps)
+        all_reps = torch.cat(all_reps)
+        all_reps = all_reps.view(-1, n_psg_per_query)
+        loss = self.model.cross_entropy(all_reps, labels)
+
+        if self.model.training:
+            step_acc = accuracy(all_reps, target=labels)[0]
+            #print(step_acc)
+            self.acc_meter.update(step_acc)
+            if self.state.global_step > 0 and self.state.global_step % self.args.logging_steps == 0:
+                logger.info('step: {}, {}'.format(self.state.global_step, self.acc_meter))
+
+            self._reset_meters_if_needed()
+
+        return (loss, all_reps) if return_outputs else loss
     
     def prediction_step(
         self,
@@ -157,7 +190,7 @@ class RerankerTrainer(Trainer):
         with torch.no_grad():
             if has_labels or loss_without_labels:
                 with self.compute_loss_context_manager():
-                    loss, outputs = self.compute_loss(model, inputs, return_outputs=True)
+                    loss, outputs = self.compute_loss_pred(model, inputs, return_outputs=True)
                 loss = loss.mean().detach()
 
                 if isinstance(outputs, dict):
