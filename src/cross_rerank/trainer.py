@@ -97,9 +97,9 @@ class RerankerTrainer(Trainer):
         #if self.args.gradient_accumulation_steps > 1:
         #    loss = loss / self.args.gradient_accumulation_steps
         #loss.backward()
-        print(all_reps.grad.size())       
-        grads = all_reps.grad.split(self.args.chunk_size)
-        print(grads.size())     
+        temp = all_reps.view(-1,1)      
+        grads = temp.grad.split(self.args.chunk_size)
+            
         for id_chunk, attn_chunk, type_chunk, grad, rnd in zip(id_chunks, attn_mask_chunks, type_ids_chunks, grads, rnds):
             with rnd:
                 chunk_reps = self.model(id_chunk, attn_chunk, type_chunk).logits
