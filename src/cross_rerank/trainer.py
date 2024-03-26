@@ -98,7 +98,7 @@ class RerankerTrainer(Trainer):
         #    loss = loss / self.args.gradient_accumulation_steps
         #loss.backward()
         #temp = all_reps.view(-1,1)      
-        grads = all_reps.grad.split(self.args.chunk_size/n_psg_per_query)
+        grads = all_reps.grad.split(int(self.args.chunk_size/n_psg_per_query))
             
         for id_chunk, attn_chunk, type_chunk, grad, rnd in zip(id_chunks, attn_mask_chunks, type_ids_chunks, grads, rnds):
             print(id_chunk.size())
