@@ -270,7 +270,47 @@ def check(df, retrieved_list, cutoffs=[1,5,10,30,100]):
         metrics[f"Hit@{cutoff}"] = hit_acc
     return metrics
     
-
+def save_cross_data(test_data, indices, scores, file):
+    rst = []
+    tokenized_queries = test_data['tokenized_question'].tolist()
+    for i in range(len(test_data)):
+        scores_i = scores[i]
+        indices_i = indices[i]
+        ans_ids = json.loads(test_data['ans_id'][i])
+        all_ans_id = [element for x in ans_ids for element in x]
+        neg_doc_ids = []
+        neg_scores = []
+        count = 0
+        while len(neg_doc_ids) < 100:
+            if indices_i[count] not in all_ans_id and indices_i[count] != -1:
+                neg_doc_ids.append(indices_i[count])
+                neg_scores.append(scores_i[count])
+            count += 1
+                
+        for j in len(ans_ids):
+            ans_id = ans_ids[j]
+            item = {}
+            item['query'] = tokenized_queries[i]
+            item['positives'] = {}
+            item['negatives'] = {}
+            item['positives']['doc_id'] = []
+            item['positives']['score'] = []
+            item['negatives']['doc_id'] = neg_doc_ids
+            item['negatives']['score'] = neg_scores
+            for pos_id in ans_id:
+                item['positives']['doc_id'].append(pos_id)
+                try:
+                    idx = indices_i.index()
+                    item['postives']['score'].append(scores_i[idx])
+                except:
+                    item['postives']['score'].append(0)
+                        
+            rst.append(item)
+    with open(f'{file}.jsonl', 'w') as jsonl_file:
+        for item in rst:
+            json_line = json.dumps(item, ensure_ascii=False)
+            jsonl_file.write(json_line + '\n')
+                
 def main():
     parser = HfArgumentParser([Args])
     args: Args = parser.parse_args_into_dataclasses()[0]
@@ -331,7 +371,7 @@ def main():
         max_length=args.max_query_length
     )
 
-    #print(len(indices))
+    save_cross_data(test_data, indices, scores, args.data_type)
 
     retrieval_results, retrieval_ids = [], []
     for indice in indices:
