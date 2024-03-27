@@ -307,9 +307,9 @@ def save_cross_data(test_data, indices, scores, file):
                 item['positives']['doc_id'].append(pos_id)
                 try:
                     idx = indices_i.index()
-                    item['postives']['score'].append(scores_i[idx])
+                    item['positives']['score'].append(scores_i[idx])
                 except:
-                    item['postives']['score'].append(scores_i[-1])
+                    item['positives']['score'].append(scores_i[-1])
                         
             rst.append(item)
     with open(f'{file}.jsonl', 'w') as jsonl_file:
