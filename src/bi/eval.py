@@ -64,6 +64,12 @@ class Args:
         default="test",
         metadata={'help': 'Type data to test'}
     )
+    
+    cross_data: bool = field(
+        default=False,
+        metadata={'help': 'Data for cross-encoder training'}
+    )
+    
     save_embedding: bool = field(
         default=False,
         metadata={'help': 'Save embeddings in memmap at save_dir?'}
@@ -287,7 +293,7 @@ def save_cross_data(test_data, indices, scores, file):
                 neg_scores.append(scores_i[count])
             count += 1
                 
-        for j in len(ans_ids):
+        for j in range(len(ans_ids)):
             ans_id = ans_ids[j]
             item = {}
             item['query'] = tokenized_queries[i]
@@ -303,7 +309,7 @@ def save_cross_data(test_data, indices, scores, file):
                     idx = indices_i.index()
                     item['postives']['score'].append(scores_i[idx])
                 except:
-                    item['postives']['score'].append(0)
+                    item['postives']['score'].append(scores_i[-1])
                         
             rst.append(item)
     with open(f'{file}.jsonl', 'w') as jsonl_file:
@@ -371,7 +377,8 @@ def main():
         max_length=args.max_query_length
     )
 
-    save_cross_data(test_data, indices, scores, args.data_type)
+    if args.cross_data:
+        save_cross_data(test_data, indices, scores, args.data_type)
 
     retrieval_results, retrieval_ids = [], []
     for indice in indices:
