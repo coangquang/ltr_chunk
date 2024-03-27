@@ -280,10 +280,8 @@ def save_cross_data(test_data, indices, scores, file):
     rst = []
     tokenized_queries = test_data['tokenized_question'].tolist()
     for i in range(len(test_data)):
-        scores_i = scores[i]
-        indices_i = indices[i]
-        print(indices_i)
-        print(scores_i)
+        scores_i = scores[i].tolist()
+        indices_i = indices[i].tolist()
         ans_ids = json.loads(test_data['ans_id'][i])
         all_ans_id = [element for x in ans_ids for element in x]
         neg_doc_ids = []
@@ -291,8 +289,8 @@ def save_cross_data(test_data, indices, scores, file):
         count = 0
         while len(neg_doc_ids) < 100:
             if indices_i[count] not in all_ans_id and indices_i[count] != -1:
-                neg_doc_ids.append(int(indices_i[count]))
-                neg_scores.append(float(scores_i[count]))
+                neg_doc_ids.append(indices_i[count])
+                neg_scores.append(scores_i[count])
             count += 1
                 
         for j in range(len(ans_ids)):
@@ -306,14 +304,15 @@ def save_cross_data(test_data, indices, scores, file):
             item['negatives']['doc_id'] = neg_doc_ids
             item['negatives']['score'] = neg_scores
             for pos_id in ans_id:
-                item['positives']['doc_id'].append(int(pos_id))
+                item['positives']['doc_id'].append(pos_id)
                 try:
-                    idx = indices_i.index()
-                    item['positives']['score'].append(float(scores_i[idx]))
+                    idx = indices_i.index(pos_id)
+                    item['positives']['score'].append(scores_i[idx])
                 except:
-                    item['positives']['score'].append(float(scores_i[-1]))
+                    item['positives']['score'].append(scores_i[-1])
                         
             rst.append(item)
+            
     with open(f'{file}.jsonl', 'w') as jsonl_file:
         for item in rst:
             json_line = json.dumps(item, ensure_ascii=False)
