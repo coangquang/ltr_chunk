@@ -55,10 +55,16 @@ class RerankerTrainer(Trainer):
             self.tokenizer.save_pretrained(output_dir)
             
     def compute_loss(self, model, inputs, return_outputs=False):
-        outputs, loss = model(inputs)
+        n_psg_per_query = self.args.train_n_passages // self.args.rerank_forward_factor
+        input_ids = inputs['input_ids']
+        attention_mask = inputs['attention_mask']
+        token_type_ids = inputs['token_type_ids']
+        labels = inputs['labels']
+        outputs = model(input_ids, attention_mask, token_type_ids)
+        outputs.logits = outputs.logits.view(-1, n_psg_per_query)
+        loss = self.model.cross_entropy(outputs.logits, labels)
 
         if self.model.training:
-            labels = inputs['labels']
             step_acc = accuracy(output=outputs.logits.detach(), target=labels)[0]
             self.acc_meter.update(step_acc)
             if self.state.global_step > 0 and self.state.global_step % self.args.logging_steps == 0:
