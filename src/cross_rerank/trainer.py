@@ -59,11 +59,11 @@ class RerankerTrainer(Trainer):
         inputs = self._prepare_inputs(inputs)
 
         with self.compute_loss_context_manager():
-            loss, surrogate = self.compute_loss(model, inputs)
+            loss = self.compute_loss_train(model, inputs)
 
         return loss.detach() / self.args.gradient_accumulation_steps
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss_train(self, model, inputs, return_outputs=False):
         #print(inputs)
         #print(inputs['input_ids'].size())
         n_psg_per_query = self.args.train_n_passages // self.args.rerank_forward_factor
@@ -121,9 +121,9 @@ class RerankerTrainer(Trainer):
 
             self._reset_meters_if_needed()
 
-        return (loss, all_reps) if return_outputs else (loss, surrogate)
+        return (loss, all_reps) if return_outputs else loss
     
-    def compute_loss_pred(self, model, inputs, return_outputs=False):
+    '''def compute_loss_pred(self, model, inputs, return_outputs=False):
         #print(inputs)
         #print(inputs['input_ids'].size())
         n_psg_per_query = self.args.train_n_passages // self.args.rerank_forward_factor
@@ -193,7 +193,7 @@ class RerankerTrainer(Trainer):
         with torch.no_grad():
             if has_labels or loss_without_labels:
                 with self.compute_loss_context_manager():
-                    loss, outputs = self.compute_loss_pred(model, inputs, return_outputs=True)
+                    loss, outputs = self.compute_loss(model, inputs, return_outputs=True)
                 loss = loss.mean().detach()
 
                 if isinstance(outputs, dict):
@@ -219,7 +219,7 @@ class RerankerTrainer(Trainer):
         if len(logits) == 1:
             logits = logits[0]
 
-        return (loss, logits, labels)
+        return (loss, logits, labels)'''
 
     def _reset_meters_if_needed(self):
         if int(self.state.epoch) != self.last_epoch:

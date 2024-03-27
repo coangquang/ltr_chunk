@@ -78,6 +78,14 @@ def main():
     trainer.remove_callback(PrinterCallback)
     trainer.add_callback(LoggerCallback)
     rerank_data_loader.trainer = trainer
+    
+    if args.do_eval:
+        logger.info("*** Evaluate ***")
+        metrics = trainer.evaluate(metric_key_prefix="eval")
+        metrics["eval_samples"] = len(eval_dataset)
+
+        trainer.log_metrics("eval", metrics)
+        trainer.save_metrics("eval", metrics)
 
     if args.do_train:
         train_result = trainer.train()
