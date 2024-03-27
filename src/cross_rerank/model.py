@@ -36,8 +36,8 @@ class Reranker(nn.Module):
 
         outputs: SequenceClassifierOutput = self.hf_model(input_ids, attention_mask, token_type_ids, return_dict=True)
         outputs.logits = outputs.logits.view(-1, n_psg_per_query)
-        loss = self.cross_entropy(outputs.logits, labels)
-        return outputs, loss
+        outputs.loss = self.cross_entropy(outputs.logits, labels)
+        return outputs
 
     @classmethod
     def from_pretrained(cls, all_args: Arguments, *args, **kwargs):
