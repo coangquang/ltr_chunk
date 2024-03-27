@@ -282,6 +282,8 @@ def save_cross_data(test_data, indices, scores, file):
     for i in range(len(test_data)):
         scores_i = scores[i]
         indices_i = indices[i]
+        print(indices_i)
+        print(scores_i)
         ans_ids = json.loads(test_data['ans_id'][i])
         all_ans_id = [element for x in ans_ids for element in x]
         neg_doc_ids = []
