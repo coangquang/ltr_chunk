@@ -54,6 +54,20 @@ class RerankerTrainer(Trainer):
         if self.tokenizer is not None and self.is_world_process_zero():
             self.tokenizer.save_pretrained(output_dir)
             
+    def compute_loss(self, model, inputs, return_outputs=False):
+        outputs, loss = model(inputs)
+
+        if self.model.training:
+            labels = inputs['labels']
+            step_acc = accuracy(output=outputs.logits.detach(), target=labels)[0]
+            self.acc_meter.update(step_acc)
+            if self.state.global_step > 0 and self.state.global_step % self.args.logging_steps == 0:
+                logger.info('step: {}, {}'.format(self.state.global_step, self.acc_meter))
+
+            self._reset_meters_if_needed()
+
+        return (loss, outputs) if return_outputs else loss
+            
     def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
         model.train()
         inputs = self._prepare_inputs(inputs)
