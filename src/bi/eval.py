@@ -290,7 +290,7 @@ def save_cross_data(test_data, indices, scores, file):
         while len(neg_doc_ids) < 100:
             if indices_i[count] not in all_ans_id and indices_i[count] != -1:
                 neg_doc_ids.append(indices_i[count])
-                neg_scores.append(scores_i[count])
+                neg_scores.append(float(scores_i[count]))
             count += 1
                 
         for j in range(len(ans_ids)):
@@ -307,9 +307,9 @@ def save_cross_data(test_data, indices, scores, file):
                 item['positives']['doc_id'].append(pos_id)
                 try:
                     idx = indices_i.index()
-                    item['positives']['score'].append(scores_i[idx])
+                    item['positives']['score'].append(float(scores_i[idx]))
                 except:
-                    item['positives']['score'].append(scores_i[-1])
+                    item['positives']['score'].append(float(scores_i[-1]))
                         
             rst.append(item)
     with open(f'{file}.jsonl', 'w') as jsonl_file:
