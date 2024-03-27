@@ -289,7 +289,7 @@ def save_cross_data(test_data, indices, scores, file):
         count = 0
         while len(neg_doc_ids) < 100:
             if indices_i[count] not in all_ans_id and indices_i[count] != -1:
-                neg_doc_ids.append(indices_i[count])
+                neg_doc_ids.append(int(indices_i[count]))
                 neg_scores.append(float(scores_i[count]))
             count += 1
                 
@@ -304,7 +304,7 @@ def save_cross_data(test_data, indices, scores, file):
             item['negatives']['doc_id'] = neg_doc_ids
             item['negatives']['score'] = neg_scores
             for pos_id in ans_id:
-                item['positives']['doc_id'].append(pos_id)
+                item['positives']['doc_id'].append(int(pos_id))
                 try:
                     idx = indices_i.index()
                     item['positives']['score'].append(float(scores_i[idx]))
