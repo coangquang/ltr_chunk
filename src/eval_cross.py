@@ -325,7 +325,7 @@ def check(df, retrieved_list, cutoffs=[1,5,10,30,100]):
         metrics[f"Hit@{cutoff}"] = hit_acc
     return metrics
     
-def save_cross_data(test_data, indices, scores, file):
+def save_bi_data(test_data, indices, scores, file):
     rst = []
     tokenized_queries = test_data['tokenized_question'].tolist()
     for i in range(len(test_data)):
@@ -335,12 +335,10 @@ def save_cross_data(test_data, indices, scores, file):
         all_ans_id = [element for x in ans_ids for element in x]
         neg_doc_ids = []
         neg_scores = []
-        count = 0
-        while len(neg_doc_ids) < 100:
+        for count in range(len(indices_i)):
             if indices_i[count] not in all_ans_id and indices_i[count] != -1:
                 neg_doc_ids.append(indices_i[count])
                 neg_scores.append(scores_i[count])
-            count += 1
                 
         for j in range(len(ans_ids)):
             ans_id = ans_ids[j]
@@ -429,8 +427,6 @@ def main():
         max_length=args.max_query_length
     )
 
-    #if args.cross_data:
-    #    save_cross_data(test_data, indices, scores, args.data_type)
 
     retrieval_results, retrieval_ids = [], []
     for indice in indices:
@@ -445,6 +441,9 @@ def main():
         retrieval_ids.append(indice)
         
     rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, test_data, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length)
+    
+    if args.bi_data:
+        save_bi_data(test_data, rerank_ids, rerank_scores, args.data_type)
         
     metrics = check(test_data, retrieval_ids)
     print(metrics)
