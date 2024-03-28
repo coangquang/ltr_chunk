@@ -57,6 +57,10 @@ class Args:
         default=256,
         metadata={'help': 'Max cross length.'}
     )
+    cross_batch_size: int = field(
+        default=128,
+        metadata={'help': 'Inference batch size.'}
+    )
     batch_size: int = field(
         default=128,
         metadata={'help': 'Inference batch size.'}
@@ -441,7 +445,7 @@ def main():
         retrieval_results.append(rst)
         retrieval_ids.append(indice)
         
-    rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, test_data, corpus, retrieval_ids, args.batch_size, args.cross_max_length)
+    rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, test_data, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length)
         
     metrics = check(test_data, retrieval_ids)
     print(metrics)
