@@ -40,9 +40,11 @@ class Reranker(nn.Module):
 
 
 class RerankerForInference(nn.Module):
-    def __init__(self, hf_model: Optional[PreTrainedModel] = None):
+    def __init__(self, model_checkpoint, hf_model: Optional[PreTrainedModel] = None):
         super().__init__()
         self.hf_model = hf_model
+        if hf_model is None:
+            self.hf_model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint)
         self.hf_model.eval()
 
     @torch.no_grad()
