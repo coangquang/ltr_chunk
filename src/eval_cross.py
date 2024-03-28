@@ -247,9 +247,9 @@ def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataF
         reranked_scores = reranked_scores.view(-1,30).to('cpu').tolist()
         for m in range(len(reranked_scores)):
             tuple_lst = [(batch_retrieved_ids[m][n], reranked_scores[m][n]) for n in range(30)]
-            sorted_tuple_lst = tuple_lst.sort(key=lambda tup: tup[1], reverse=True)
-            reranked_ids.append([tup[0] for tup in sorted_tuple_lst]) 
-            reranked_scores.append([tup[1] for tup in sorted_tuple_lst])            
+            tuple_lst.sort(key=lambda tup: tup[1], reverse=True)
+            reranked_ids.append([tup[0] for tup in tuple_lst]) 
+            reranked_scores.append([tup[1] for tup in tuple_lst])            
             
     return reranked_ids, reranked_scores
         
