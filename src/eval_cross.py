@@ -329,8 +329,8 @@ def save_bi_data(test_data, indices, scores, file):
     rst = []
     tokenized_queries = test_data['tokenized_question'].tolist()
     for i in range(len(test_data)):
-        scores_i = scores[i].tolist()
-        indices_i = indices[i].tolist()
+        scores_i = scores[i]
+        indices_i = indices[i]
         ans_ids = json.loads(test_data['ans_id'][i])
         all_ans_id = [element for x in ans_ids for element in x]
         neg_doc_ids = []
