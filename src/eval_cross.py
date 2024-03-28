@@ -231,7 +231,7 @@ def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataF
         for j in range(30):
             texts.append(questions[idx] + eos + eos + corpus[retrieved_ids[idx][j]])
     reranked_ids = []
-    reranked_scores = []
+    rerank_scores = []
     
     for start_index in tqdm(range(0, len(questions), batch_size), desc="Rerank",
                             disable=len(questions) < batch_size):
@@ -249,9 +249,9 @@ def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataF
             tuple_lst = [(batch_retrieved_ids[m][n], reranked_scores[m][n]) for n in range(30)]
             tuple_lst.sort(key=lambda tup: tup[1], reverse=True)
             reranked_ids.append([tup[0] for tup in tuple_lst]) 
-            reranked_scores.append([tup[1] for tup in tuple_lst])            
+            rerank_scores.append([tup[1] for tup in tuple_lst])            
             
-    return reranked_ids, reranked_scores
+    return reranked_ids, rerank_scores
         
        
     
@@ -441,9 +441,7 @@ def main():
         retrieval_ids.append(indice)
         
     rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, test_data, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length)
-    print(len(rerank_scores))
-    print(len(rerank_ids))
-    print(len(test_data))
+
     if args.bi_data:
         save_bi_data(test_data, rerank_ids, rerank_scores, args.data_type)
         
