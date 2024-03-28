@@ -37,7 +37,8 @@ class CrossEncoderDataLoader:
             examples=examples,
             negative_size=self.negative_size,
             offset=current_epoch + self.args.seed,
-            use_first_positive=self.args.use_first_positive
+            use_first_positive=self.args.use_first_positive,
+            use_first_negative=self.args.use_first_negative
         )
         assert len(input_doc_ids) == len(examples['query']) * self.args.train_n_passages
 

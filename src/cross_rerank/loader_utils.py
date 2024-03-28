@@ -8,7 +8,8 @@ def _slice_with_mod(elements: List, offset: int, cnt: int) -> List:
 def group_doc_ids(examples: Dict[str, List],
                   negative_size: int,
                   offset: int,
-                  use_first_positive: bool = False) -> List[int]:
+                  use_first_positive: bool = False,
+                  use_first_negative: bool = True) -> List[int]:
     pos_doc_ids: List[int] = []
     positives: List[Dict[str, List]] = examples['positives']
     for idx, ex_pos in enumerate(positives):
@@ -17,8 +18,7 @@ def group_doc_ids(examples: Dict[str, List],
         if use_first_positive:
             # keep positives that has higher score than all negatives
             all_pos_doc_ids = [doc_id for p_idx, doc_id in enumerate(all_pos_doc_ids)
-                               if p_idx == 0 or ex_pos['score'][p_idx] >= ex_pos['score'][0]
-                               or ex_pos['score'][p_idx] > max(examples['negatives'][idx]['score'])]
+                               if ex_pos['score'][p_idx] == max(ex_pos['score'])]
 
         cur_pos_doc_id = _slice_with_mod(all_pos_doc_ids, offset=offset, cnt=1)[0]
         pos_doc_ids.append(int(cur_pos_doc_id))
@@ -26,9 +26,12 @@ def group_doc_ids(examples: Dict[str, List],
     neg_doc_ids: List[List[int]] = []
     negatives: List[Dict[str, List]] = examples['negatives']
     for ex_neg in negatives:
-        cur_neg_doc_ids = _slice_with_mod(ex_neg['doc_id'],
-                                          offset=offset * negative_size,
-                                          cnt=negative_size)
+        if use_first_negative:
+            cur_neg_doc_ids = ex_neg['doc_id'][:negative_size]
+        else:
+            cur_neg_doc_ids = _slice_with_mod(ex_neg['doc_id'],
+                                            offset=offset * negative_size,
+                                            cnt=negative_size)
         cur_neg_doc_ids = [int(doc_id) for doc_id in cur_neg_doc_ids]
         neg_doc_ids.append(cur_neg_doc_ids)
 

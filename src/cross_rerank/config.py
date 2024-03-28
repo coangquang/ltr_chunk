@@ -47,6 +47,10 @@ class Arguments(TrainingArguments):
         default=False,
         metadata={"help": "Always use the first positive passage"}
     )
+    use_first_negative: bool = field(
+        default=False,
+        metadata={"help": "Always use the first positive passage"}
+    )
     use_scaled_loss: bool = field(
         default=True,
         metadata={"help": "Use scaled loss or not"}
