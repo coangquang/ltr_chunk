@@ -243,7 +243,7 @@ def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataF
                     max_length=max_length,
                     return_tensors="pt",
                 ).to('cuda')
-        reranked_scores = reranker(**collated).logits
+        reranked_scores = reranker(collated).logits
         reranked_scores = reranked_scores.view(-1,30).to('cpu').tolist()
         for m in range(len(reranked_scores)):
             tuple_lst = [(batch_retrieved_ids[m][n], reranked_scores[m][n]) for n in range(30)]
