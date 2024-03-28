@@ -441,7 +441,9 @@ def main():
         retrieval_ids.append(indice)
         
     rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, test_data, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length)
-    
+    print(len(rerank_scores))
+    print(len(rerank_ids))
+    print(len(test_data))
     if args.bi_data:
         save_bi_data(test_data, rerank_ids, rerank_scores, args.data_type)
         
