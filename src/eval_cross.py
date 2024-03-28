@@ -57,7 +57,7 @@ class Args:
         metadata={'help': 'Max cross length.'}
     )
     cross_batch_size: int = field(
-        default=128,
+        default=32,
         metadata={'help': 'Inference batch size.'}
     )
     batch_size: int = field(
