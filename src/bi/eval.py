@@ -99,8 +99,9 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
     if load_embedding != '':
         test_tokens = tokenizer(['test'])
         test = model.encoder.get_representation(test_tokens['input_ids'], test_tokens['attention_mask'])
+        test = test.numpy()
         dtype = test.dtype
-        dim = test.size()[-1]
+        dim = test.shape[-1]
 
         corpus_embeddings = np.memmap(
             load_embedding,
