@@ -145,20 +145,20 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
             logger.info(f"saving embeddings at {save_path}...")
             memmap = np.memmap(
                 save_path,
-                shape=corpus_embeddings.shape,
+                shape=all_embeddings.shape,
                 mode="w+",
-                dtype=corpus_embeddings.dtype
+                dtype=all_embeddings.dtype
             )
 
-            length = corpus_embeddings.shape[0]
+            length = all_embeddings.shape[0]
             # add in batch
             save_batch_size = 10000
             if length > save_batch_size:
                 for i in tqdm(range(0, length, save_batch_size), leave=False, desc="Saving Embeddings"):
                     j = min(i + save_batch_size, length)
-                    memmap[i: j] = corpus_embeddings[i: j]
+                    memmap[i: j] = all_embeddings[i: j]
             else:
-                memmap[:] = corpus_embeddings
+                memmap[:] = all_embeddings
     # create faiss index
     faiss_index = faiss.index_factory(dim, index_factory, faiss.METRIC_INNER_PRODUCT)
 
