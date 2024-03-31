@@ -79,28 +79,30 @@ class Args:
         default=False,
         metadata={'help': 'Save embeddings in memmap at save_dir?'}
     )
-    load_embedding: bool = field(
-        default=False,
-        metadata={'help': 'Load embeddings from save_dir?'}
+    
+    load_embedding: str = field(
+        default='',
+        metadata={'help': 'Path to saved embeddings.'}
     )
+
     save_path: str = field(
         default="embeddings.memmap",
         metadata={'help': 'Path to save embeddings.'}
     )
 
-def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: int = 16, max_length: int=512, index_factory: str = "Flat", save_path: str = None, save_embedding: bool = False, load_embedding: bool = False):
+def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: int = 16, max_length: int=512, index_factory: str = "Flat", save_path: str = None, save_embedding: bool = False, load_embedding: str = ''):
     """
     1. Encode the entire corpus into dense embeddings; 
     2. Create faiss index; 
     3. Optionally save embeddings.
     """
-    if load_embedding:
+    if load_embedding != '':
         test = model.encode("test")
         dtype = test.dtype
         dim = len(test)
 
         corpus_embeddings = np.memmap(
-            save_path,
+            load_embedding,
             mode="r",
             dtype=dtype
         ).reshape(-1, dim)
@@ -381,7 +383,7 @@ def main():
     else:
         ground_truths = []
         ground_ids = []
-        questions = [preprocess_question[sample['question']] for sample in test_data]
+        questions = [preprocess_question(sample['question']) for sample in test_data]
         for sample in test_data:
             temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevant_articles']]
             ground_truths.append(temp)
