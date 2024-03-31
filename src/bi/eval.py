@@ -97,9 +97,10 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
     3. Optionally save embeddings.
     """
     if load_embedding != '':
-        test = model.encoder.encoder.encode("test")
+        test_tokens = tokenizer(['test'])
+        test = model.encoder.get_representation(test_tokens['input_ids'], test_tokens['attention_mask'])
         dtype = test.dtype
-        dim = len(test)
+        dim = test.size()[-1]
 
         corpus_embeddings = np.memmap(
             load_embedding,
