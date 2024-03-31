@@ -107,7 +107,7 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
         dtype = test.dtype
         dim = test.shape[-1]
 
-        corpus_embeddings = np.memmap(
+        all_embeddings = np.memmap(
             load_embedding,
             mode="r",
             dtype=dtype
