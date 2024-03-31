@@ -97,7 +97,7 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
     3. Optionally save embeddings.
     """
     if load_embedding != '':
-        test = model.encode("test")
+        test = model.encoder.encoder.encode("test")
         dtype = test.dtype
         dim = len(test)
 
