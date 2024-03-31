@@ -171,14 +171,14 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
     return faiss_index
 
 
-def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFrame, faiss_index: faiss.Index, k:int = 100, batch_size: int = 256, max_length: int=128):
+def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, questions, faiss_index: faiss.Index, k:int = 100, batch_size: int = 256, max_length: int=128):
     """
     1. Encode queries into dense embeddings;
     2. Search through faiss index
     """
     #model.to('cuda')
     q_embeddings = []
-    questions = queries['tokenized_question'].tolist()
+    #questions = queries['tokenized_question'].tolist()
     #questions = [process_query(x) for x in questions]
     for start_index in tqdm(range(0, len(questions), batch_size), desc="Inference Embeddings",
                             disable=len(questions) < batch_size):
@@ -281,13 +281,13 @@ def check(ground_ids, retrieved_list, cutoffs=[1,5,10,30,100]):
         metrics[f"Hit@{cutoff}"] = hit_acc
     return metrics
     
-def save_cross_data(test_data, indices, scores, file):
+def save_cross_data(tokenized_queries, ground_ids, indices, scores, file):
     rst = []
-    tokenized_queries = test_data['tokenized_question'].tolist()
-    for i in range(len(test_data)):
+    #tokenized_queries = test_data['tokenized_question'].tolist()
+    for i in range(len(tokenized_queries)):
         scores_i = scores[i].tolist()
         indices_i = indices[i].tolist()
-        ans_ids = json.loads(test_data['ans_id'][i])
+        ans_ids = ground_ids[i]
         all_ans_id = [element for x in ans_ids for element in x]
         neg_doc_ids = []
         neg_scores = []
@@ -370,6 +370,7 @@ def main():
     if csv_file:
         ans_ids = []
         ground_ids = []
+        questions = test_data['tokenized_question'].tolist()
         for i in range(len(test_data)):
             ans_ids.append(json.loads(test_data['best_ans_id'][i]))
             ground_ids.append(json.loads(test_data['ans_id'][i]))
@@ -380,6 +381,7 @@ def main():
     else:
         ground_truths = []
         ground_ids = []
+        questions = [preprocess_question[sample['question']] for sample in test_data]
         for sample in test_data:
             temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevant_articles']]
             ground_truths.append(temp)
@@ -401,7 +403,7 @@ def main():
     scores, indices = search(
         model=model, 
         tokenizer=tokenizer,
-        queries=test_data, 
+        questions=questions, 
         faiss_index=faiss_index, 
         k=args.k, 
         batch_size=args.batch_size, 
@@ -409,7 +411,7 @@ def main():
     )
 
     if args.cross_data:
-        save_cross_data(test_data, indices, scores, args.data_type)
+        save_cross_data(questions, ground_ids, indices, scores, args.data_type)
 
     retrieval_results, retrieval_ids = [], []
     for indice in indices:
