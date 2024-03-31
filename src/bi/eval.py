@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from transformers import HfArgumentParser
 from transformers import AutoTokenizer
 from model import SharedBiEncoder
+from preprocess import preprocess_question
 #from src.process import process_query, process_text, concat_str
 import itertools
 #from pandarallel import pandarallel
@@ -63,6 +64,10 @@ class Args:
     data_type: str = field(
         default="test",
         metadata={'help': 'Type data to test'}
+    )
+    data_file: str = field(
+        default=None,
+        metadata={'help': 'Path to evaluated data.'}
     )
     
     cross_data: bool = field(
@@ -243,14 +248,14 @@ def evaluate(preds, labels, cutoffs=[1,5,10,30,100]):
 
     return metrics
 
-def calculate_score(df, retrieved_list):
+def calculate_score(ground_ids, retrieved_list):
     all_count = 0
     hit_count = 0
-    for i in range(len(df)):
+    for i in range(len(ground_ids)):
         all_check = True
         hit_check = False
         retrieved_ids = retrieved_list[i]
-        ans_ids = json.loads(df['ans_id'][i])
+        ans_ids = ground_ids[i]
         for a_ids in ans_ids:
             com = [a_id for a_id in a_ids if a_id in retrieved_ids]
             if len(com) > 0:
@@ -263,15 +268,15 @@ def calculate_score(df, retrieved_list):
         if all_check:
             all_count += 1
                 
-    all_acc = all_count/len(df)
-    hit_acc = hit_count/len(df)
+    all_acc = all_count/len(ground_ids)
+    hit_acc = hit_count/len(ground_ids)
     return hit_acc, all_acc
 
-def check(df, retrieved_list, cutoffs=[1,5,10,30,100]):
+def check(ground_ids, retrieved_list, cutoffs=[1,5,10,30,100]):
     metrics = {}
     for cutoff in cutoffs:
         retrieved_k = [x[:cutoff] for x in retrieved_list]
-        hit_acc, all_acc = calculate_score(df, retrieved_k)
+        hit_acc, all_acc = calculate_score(ground_ids, retrieved_k)
         metrics[f"All@{cutoff}"] = all_acc
         metrics[f"Hit@{cutoff}"] = hit_acc
     return metrics
@@ -327,8 +332,23 @@ def main():
                             fixed=True)
     model.to('cuda')
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer if args.tokenizer else args.encoder)
-    
-    if args.data_type == 'eval':
+    csv_file = True
+    if args.data_file:
+        if args.data_file.endswith("jsonl"):
+            test_data = []
+            with open(args.data_file, 'r') as jsonl_file:
+                for line in jsonl_file:
+                    temp = json.loads(line)
+                    test_data.append(temp)
+            csv_file=False
+        elif args.data_file.endswith("json"):
+            csv_file=False
+            with open(args.data_file, 'r') as json_file:
+                test_data = json.load(json_file) 
+        elif args.data_file.endswith("csv"):
+            test_data = pd.read_csv(args.data_file)
+            
+    elif args.data_type == 'eval':
         test_data = pd.read_csv(args.data_path + "/tval.csv") 
     elif args.data_type == 'train':
         test_data = pd.read_csv(args.data_path + "/ttrain.csv")
@@ -347,14 +367,24 @@ def main():
     corpus = corpus_data['tokenized_text'].tolist()
     
     #ans_text_ids = [json.loads(test_data['best_ans_text_id'][i]) for i in range(len(test_data))]
-    ans_ids = []
-    for i in range(len(test_data)):
-        ans_ids.append(json.loads(test_data['best_ans_id'][i]))
-    #ans_text_ids = [json.loads(sample) for sample in ans_text_ids]
-    ground_truths = []
-    for sample in ans_ids:
-        temp = [corpus_data['law_id'][y] + "_" + str(corpus_data['article_id'][y]) for y in sample]
-        ground_truths.append(temp)
+    if csv_file:
+        ans_ids = []
+        ground_ids = []
+        for i in range(len(test_data)):
+            ans_ids.append(json.loads(test_data['best_ans_id'][i]))
+            ground_ids.append(json.loads(test_data['ans_id'][i]))
+        ground_truths = []
+        for sample in ans_ids:
+            temp = [corpus_data['law_id'][y] + "_" + str(corpus_data['article_id'][y]) for y in sample]
+            ground_truths.append(temp)
+    else:
+        ground_truths = []
+        ground_ids = []
+        for sample in test_data:
+            temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevant_articles']]
+            ground_truths.append(temp)
+            tempp = [it['ans_id'] for it in sample['relevant_articles']]
+            ground_ids.append(tempp)
     
     faiss_index = index(
         model=model, 
@@ -393,7 +423,7 @@ def main():
         retrieval_results.append(rst)
         retrieval_ids.append(indice)
     
-    metrics = check(test_data, retrieval_ids)
+    metrics = check(ground_ids, retrieval_ids)
     print(metrics)
     metrics = evaluate(retrieval_results, ground_truths)
     print(metrics)
