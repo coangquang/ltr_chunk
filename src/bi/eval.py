@@ -97,7 +97,11 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
     3. Optionally save embeddings.
     """
     if load_embedding != '':
-        test_tokens = tokenizer(['test'])
+        test_tokens = tokenizer(['test'],
+                                padding=True,
+                                truncation=True,
+                                max_length=128,
+                                return_tensors="pt")
         test = model.encoder.get_representation(test_tokens['input_ids'], test_tokens['attention_mask'])
         test = test.numpy()
         dtype = test.dtype
