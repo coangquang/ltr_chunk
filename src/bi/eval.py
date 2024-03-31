@@ -103,7 +103,7 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
                                 max_length=128,
                                 return_tensors="pt").to('cuda')
         test = model.encoder.get_representation(test_tokens['input_ids'], test_tokens['attention_mask'])
-        test = test.numpy()
+        test = test.cpu().numpy()
         dtype = test.dtype
         dim = test.shape[-1]
 
