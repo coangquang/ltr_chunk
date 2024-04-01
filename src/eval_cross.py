@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from transformers import HfArgumentParser
 from transformers import AutoTokenizer
 from bi.model import SharedBiEncoder
+from bi.preprocess import preprocess_question
 from cross_rerank.model import RerankerForInference
 #from src.process import process_query, process_text, concat_str
 import itertools
@@ -81,6 +82,11 @@ class Args:
         metadata={'help': 'Type data to test'}
     )
     
+    data_file: str = field(
+        default=None,
+        metadata={'help': 'Path to evaluated data.'}
+    )
+    
     bi_data: bool = field(
         default=False,
         metadata={'help': 'Data for bi-encoder training'}
@@ -90,10 +96,11 @@ class Args:
         default=False,
         metadata={'help': 'Save embeddings in memmap at save_dir?'}
     )
-    load_embedding: bool = field(
-        default=False,
-        metadata={'help': 'Load embeddings from save_dir?'}
+    load_embedding: str = field(
+        default='',
+        metadata={'help': 'Path to saved embeddings.'}
     )
+    
     save_path: str = field(
         default="embeddings.memmap",
         metadata={'help': 'Path to save embeddings.'}
@@ -105,13 +112,19 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
     2. Create faiss index; 
     3. Optionally save embeddings.
     """
-    if load_embedding:
-        test = model.encode("test")
+    if load_embedding != '':
+        test_tokens = tokenizer(['test'],
+                                padding=True,
+                                truncation=True,
+                                max_length=128,
+                                return_tensors="pt").to('cuda')
+        test = model.encoder.get_representation(test_tokens['input_ids'], test_tokens['attention_mask'])
+        test = test.cpu().numpy()
         dtype = test.dtype
-        dim = len(test)
+        dim = test.shape[-1]
 
-        corpus_embeddings = np.memmap(
-            save_path,
+        all_embeddings = np.memmap(
+            load_embedding,
             mode="r",
             dtype=dtype
         ).reshape(-1, dim)
@@ -148,20 +161,20 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
             logger.info(f"saving embeddings at {save_path}...")
             memmap = np.memmap(
                 save_path,
-                shape=corpus_embeddings.shape,
+                shape=all_embeddings.shape,
                 mode="w+",
-                dtype=corpus_embeddings.dtype
+                dtype=all_embeddings.dtype
             )
 
-            length = corpus_embeddings.shape[0]
+            length = all_embeddings.shape[0]
             # add in batch
             save_batch_size = 10000
             if length > save_batch_size:
                 for i in tqdm(range(0, length, save_batch_size), leave=False, desc="Saving Embeddings"):
                     j = min(i + save_batch_size, length)
-                    memmap[i: j] = corpus_embeddings[i: j]
+                    memmap[i: j] = all_embeddings[i: j]
             else:
-                memmap[:] = corpus_embeddings
+                memmap[:] = all_embeddings
     # create faiss index
     faiss_index = faiss.index_factory(dim, index_factory, faiss.METRIC_INNER_PRODUCT)
 
@@ -182,14 +195,14 @@ def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: i
     return faiss_index
 
 
-def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFrame, faiss_index: faiss.Index, k:int = 100, batch_size: int = 256, max_length: int=128):
+def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, questions, faiss_index: faiss.Index, k:int = 100, batch_size: int = 256, max_length: int=128):
     """
     1. Encode queries into dense embeddings;
     2. Search through faiss index
     """
     #model.to('cuda')
     q_embeddings = []
-    questions = queries['tokenized_question'].tolist()
+    #questions = queries['tokenized_question'].tolist()
     #questions = [process_query(x) for x in questions]
     for start_index in tqdm(range(0, len(questions), batch_size), desc="Inference Embeddings",
                             disable=len(questions) < batch_size):
@@ -223,9 +236,9 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFram
     all_indices = np.concatenate(all_indices, axis=0)
     return all_scores, all_indices
 
-def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, queries: pd.DataFrame, corpus, retrieved_ids, batch_size = 128, max_length = 256):
+def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, questions, corpus, retrieved_ids, batch_size = 128, max_length = 256):
     eos = tokenizer.eos_token
-    questions = queries['tokenized_question'].tolist()
+    #questions = queries['tokenized_question'].tolist()
     texts = []
     for idx in range(len(questions)):
         for j in range(30):
@@ -292,14 +305,14 @@ def evaluate(preds, labels, cutoffs=[1,5,10,30,100]):
 
     return metrics
 
-def calculate_score(df, retrieved_list):
+def calculate_score(ground_ids, retrieved_list):
     all_count = 0
     hit_count = 0
-    for i in range(len(df)):
+    for i in range(len(ground_ids)):
         all_check = True
         hit_check = False
         retrieved_ids = retrieved_list[i]
-        ans_ids = json.loads(df['ans_id'][i])
+        ans_ids = ground_ids[i]
         for a_ids in ans_ids:
             com = [a_id for a_id in a_ids if a_id in retrieved_ids]
             if len(com) > 0:
@@ -312,26 +325,26 @@ def calculate_score(df, retrieved_list):
         if all_check:
             all_count += 1
                 
-    all_acc = all_count/len(df)
-    hit_acc = hit_count/len(df)
+    all_acc = all_count/len(ground_ids)
+    hit_acc = hit_count/len(ground_ids)
     return hit_acc, all_acc
 
-def check(df, retrieved_list, cutoffs=[1,5,10,30,100]):
+def check(ground_ids, retrieved_list, cutoffs=[1,5,10,30,100]):
     metrics = {}
     for cutoff in cutoffs:
         retrieved_k = [x[:cutoff] for x in retrieved_list]
-        hit_acc, all_acc = calculate_score(df, retrieved_k)
+        hit_acc, all_acc = calculate_score(ground_ids, retrieved_k)
         metrics[f"All@{cutoff}"] = all_acc
         metrics[f"Hit@{cutoff}"] = hit_acc
     return metrics
     
-def save_bi_data(test_data, indices, scores, file):
+def save_bi_data(tokenized_queries, ground_ids, indices, scores, file, org_questions=None):
     rst = []
-    tokenized_queries = test_data['tokenized_question'].tolist()
-    for i in range(len(test_data)):
+    #tokenized_queries = test_data['tokenized_question'].tolist()
+    for i in range(len(tokenized_queries)):
         scores_i = scores[i]
         indices_i = indices[i]
-        ans_ids = json.loads(test_data['ans_id'][i])
+        ans_ids = ground_ids[i]
         all_ans_id = [element for x in ans_ids for element in x]
         neg_doc_ids = []
         neg_scores = []
@@ -343,6 +356,8 @@ def save_bi_data(test_data, indices, scores, file):
         for j in range(len(ans_ids)):
             ans_id = ans_ids[j]
             item = {}
+            if org_questions != None:
+                item['question'] = org_questions[i]
             item['query'] = tokenized_queries[i]
             item['positives'] = {}
             item['negatives'] = {}
@@ -377,7 +392,23 @@ def main():
     reranker = RerankerForInference(model_checkpoint=args.cross_checkpoint)
     reranker.to('cuda')
     reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_tokenizer if args.cross_tokenizer else args.cross_checkpoint)
-    if args.data_type == 'eval':
+    csv_file = True
+    if args.data_file:
+        if args.data_file.endswith("jsonl"):
+            test_data = []
+            with open(args.data_file, 'r') as jsonl_file:
+                for line in jsonl_file:
+                    temp = json.loads(line)
+                    test_data.append(temp)
+            csv_file=False
+        elif args.data_file.endswith("json"):
+            csv_file=False
+            with open(args.data_file, 'r') as json_file:
+                test_data = json.load(json_file) 
+        elif args.data_file.endswith("csv"):
+            test_data = pd.read_csv(args.data_file)
+            
+    elif args.data_type == 'eval':
         test_data = pd.read_csv(args.data_path + "/tval.csv") 
     elif args.data_type == 'train':
         test_data = pd.read_csv(args.data_path + "/ttrain.csv")
@@ -395,15 +426,28 @@ def main():
     #dcorpus["full_text"] = dcorpus.parallel_apply(concat_str, axis=1)
     corpus = corpus_data['tokenized_text'].tolist()
     
-    #ans_text_ids = [json.loads(test_data['best_ans_text_id'][i]) for i in range(len(test_data))]
-    ans_ids = []
-    for i in range(len(test_data)):
-        ans_ids.append(json.loads(test_data['best_ans_id'][i]))
-    #ans_text_ids = [json.loads(sample) for sample in ans_text_ids]
-    ground_truths = []
-    for sample in ans_ids:
-        temp = [corpus_data['law_id'][y] + "_" + str(corpus_data['article_id'][y]) for y in sample]
-        ground_truths.append(temp)
+    if csv_file:
+        ans_ids = []
+        ground_ids = []
+        org_questions = test_data['question'].tolist()
+        questions = test_data['tokenized_question'].tolist()
+        for i in range(len(test_data)):
+            ans_ids.append(json.loads(test_data['best_ans_id'][i]))
+            ground_ids.append(json.loads(test_data['ans_id'][i]))
+        ground_truths = []
+        for sample in ans_ids:
+            temp = [corpus_data['law_id'][y] + "_" + str(corpus_data['article_id'][y]) for y in sample]
+            ground_truths.append(temp)
+    else:
+        ground_truths = []
+        ground_ids = []
+        org_questions = [sample['question'] for sample in test_data]
+        questions = [preprocess_question(sample['question']) for sample in test_data]
+        for sample in test_data:
+            temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevance_articles']]
+            ground_truths.append(temp)
+            tempp = [it['ans_id'] for it in sample['relevance_articles']]
+            ground_ids.append(tempp)
     
     faiss_index = index(
         model=model, 
@@ -420,7 +464,7 @@ def main():
     scores, indices = search(
         model=model, 
         tokenizer=tokenizer,
-        queries=test_data, 
+        questions=questions, 
         faiss_index=faiss_index, 
         k=args.k, 
         batch_size=args.batch_size, 
@@ -440,10 +484,10 @@ def main():
         retrieval_results.append(rst)
         retrieval_ids.append(indice)
         
-    rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, test_data, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length)
+    rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, questions, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length)
 
     if args.bi_data:
-        save_bi_data(test_data, rerank_ids, rerank_scores, args.data_type)
+        save_bi_data(questions, ground_ids, rerank_ids, rerank_scores, args.data_type, org_questions)
         
     metrics = check(test_data, retrieval_ids)
     print(metrics)
