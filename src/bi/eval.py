@@ -14,7 +14,7 @@ from model import SharedBiEncoder
 from preprocess import preprocess_question
 #from src.process import process_query, process_text, concat_str
 import itertools
-#from pandarallel import pandarallel
+from pyvi.ViTokenizer import tokenize
 
 logger = logging.getLogger(__name__)
 
@@ -393,7 +393,7 @@ def main():
         ground_truths = []
         ground_ids = []
         org_questions = [sample['question'] for sample in test_data]
-        questions = [preprocess_question(sample['question']) for sample in test_data]
+        questions = [tokenize(preprocess_question(sample['question'])) for sample in test_data]
         for sample in test_data:
             try:
                 temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevance_articles']]
