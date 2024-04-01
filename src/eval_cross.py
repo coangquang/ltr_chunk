@@ -489,11 +489,11 @@ def main():
     if args.bi_data:
         save_bi_data(questions, ground_ids, rerank_ids, rerank_scores, args.data_type, org_questions)
         
-    metrics = check(test_data, retrieval_ids)
+    metrics = check(ground_ids, retrieval_ids)
     print(metrics)
     metrics = evaluate(retrieval_results, ground_truths)
     print(metrics)
-    metrics = check(test_data, rerank_ids, cutoffs=[1,5,10,30])
+    metrics = check(ground_ids, rerank_ids, cutoffs=[1,5,10,30])
     print(metrics)
 
 if __name__ == "__main__":
