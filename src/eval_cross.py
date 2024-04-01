@@ -444,9 +444,13 @@ def main():
         org_questions = [sample['question'] for sample in test_data]
         questions = [preprocess_question(sample['question']) for sample in test_data]
         for sample in test_data:
-            temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevance_articles']]
+            try:
+                temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevance_articles']]
+                tempp = [it['ans_id'] for it in sample['relevance_articles']]
+            except:
+                temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevant_articles']]
+                tempp = [it['ans_id'] for it in sample['relevant_articles']]
             ground_truths.append(temp)
-            tempp = [it['ans_id'] for it in sample['relevance_articles']]
             ground_ids.append(tempp)
     
     faiss_index = index(
