@@ -289,7 +289,7 @@ def check(ground_ids, retrieved_list, cutoffs=[1,5,10,30,100]):
         metrics[f"Hit@{cutoff}"] = hit_acc
     return metrics
     
-def save_cross_data(tokenized_queries, ground_ids, indices, scores, file):
+def save_cross_data(tokenized_queries, ground_ids, indices, scores, file, org_questions=None):
     rst = []
     #tokenized_queries = test_data['tokenized_question'].tolist()
     for i in range(len(tokenized_queries)):
@@ -309,6 +309,8 @@ def save_cross_data(tokenized_queries, ground_ids, indices, scores, file):
         for j in range(len(ans_ids)):
             ans_id = ans_ids[j]
             item = {}
+            if org_questions != None:
+                item['question'] = org_questions[i]
             item['query'] = tokenized_queries[i]
             item['positives'] = {}
             item['negatives'] = {}
@@ -378,6 +380,7 @@ def main():
     if csv_file:
         ans_ids = []
         ground_ids = []
+        org_questions = test_data['question'].tolist()
         questions = test_data['tokenized_question'].tolist()
         for i in range(len(test_data)):
             ans_ids.append(json.loads(test_data['best_ans_id'][i]))
@@ -389,6 +392,7 @@ def main():
     else:
         ground_truths = []
         ground_ids = []
+        org_questions = [sample['question'] for sample in test_data]
         questions = [preprocess_question(sample['question']) for sample in test_data]
         for sample in test_data:
             temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevance_articles']]
@@ -419,7 +423,7 @@ def main():
     )
 
     if args.cross_data:
-        save_cross_data(questions, ground_ids, indices, scores, args.data_type)
+        save_cross_data(questions, ground_ids, indices, scores, args.data_type, org_questions)
 
     retrieval_results, retrieval_ids = [], []
     for indice in indices:
