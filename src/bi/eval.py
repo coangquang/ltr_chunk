@@ -393,7 +393,7 @@ def main():
         ground_truths = []
         ground_ids = []
         org_questions = [sample['question'] for sample in test_data]
-        questions = [tokenize(preprocess_question(sample['question'])) for sample in test_data]
+        questions = [tokenize(preprocess_question(sample['question'], remove_end_phrase=False)) for sample in test_data]
         for sample in test_data:
             try:
                 temp = [it['law_id'] + "_" + it['article_id'] for it in sample['relevance_articles']]
