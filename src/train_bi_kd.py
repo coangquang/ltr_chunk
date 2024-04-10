@@ -60,8 +60,9 @@ def main():
     #dtest = load_dataset('json', data_files=os.path.join(args.kd_data_dir, 'test.jsonl'))['train']
     corpus_tokenized = dcorpus['tokenized_text'].tolist()
     tokenizer = get_tokenizer(args.BE_checkpoint)
-    print("\t* Loading data...")
     print(args)
+    print("\t* Loading data...")
+    print("\t* Loading val dataset...")
     val_loader = build_dpr_traindata(corpus=corpus_tokenized, 
                                      dataset=dval, 
                                      tokenizer=tokenizer, 
@@ -70,7 +71,7 @@ def main():
                                      batch_size=args.BE_val_batch_size, 
                                      no_hard=args.no_hard, 
                                      shuffle=True)
-
+    print("\t* Loading train dataset...")
     train_loader = build_dpr_traindata(corpus=corpus_tokenized, 
                                        dataset=dtrain, 
                                        tokenizer=tokenizer, 
