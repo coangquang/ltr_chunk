@@ -18,7 +18,7 @@ def context_trans(text, tokenizer):
     #return "đoạn văn " + tokenizer.sep_token + " " + text
     return text
 
-def build_dpr_traindata(corpus, dataset, tokenizer, q_len, ctx_len, batch_size, no_hard, shuffle = False, all_data=False):
+def build_dpr_traindata(corpus, dataset, tokenizer, q_len, ctx_len, batch_size, no_hard, shuffle = False):
     """
     This funtion builds train and val data loader for biencoder training
     """

@@ -69,8 +69,7 @@ def main():
                                      ctx_len=args.ctx_len,
                                      batch_size=args.BE_val_batch_size, 
                                      no_hard=args.no_hard, 
-                                     shuffle=True,
-                                     all_data=args.all_data)
+                                     shuffle=True)
 
     train_loader = build_dpr_traindata(corpus=corpus_tokenized, 
                                        dataset=dtrain, 
@@ -79,8 +78,7 @@ def main():
                                        ctx_len=args.ctx_len, 
                                        batch_size=args.BE_train_batch_size, 
                                        no_hard=args.no_hard, 
-                                       shuffle=True,
-                                       all_data=args.all_data)
+                                       shuffle=True)
 
     dpr_trainer = BiTrainer(args=args,
                             train_loader=train_loader,
