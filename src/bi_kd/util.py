@@ -44,7 +44,7 @@ def build_dpr_traindata(corpus, dataset, tokenizer, q_len, ctx_len, batch_size, 
             score += negative['score'][:no_hard]
             negatives += negs
         
-        positive.append(pos)
+        positives.append(pos)
         scores.append(score)
 
     Q = tokenizer.batch_encode_plus(questions, padding='max_length', truncation=True, max_length=q_len, return_tensors='pt')
