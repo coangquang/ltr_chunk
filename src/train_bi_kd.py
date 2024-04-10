@@ -44,6 +44,8 @@ def main():
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int)
     parser.add_argument("--BE_loss", default=1.0, type=float,
                         help="Biencoder loss alpha parameter, 1: mean use all (hard) negatives")
+    parser.add_argument("--kd_loss", default=0.5, type=float,
+                        help="Contrastive - Knowlegede Distillation loss ratio")
     parser.add_argument("--no_hard", default=0, type=int,
                         help="Number of hard negatives using for each question")
     parser.add_argument("--final_path", default=None, type=str,

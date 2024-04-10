@@ -24,9 +24,10 @@ def cosine_scores(q_vectors, ctx_vectors):
 
 class BiEncoderNllLoss(object):
     def __init__(self,
-                 score_type="dot"):
+                 score_type="dot",
+                 kd_alpha=0.5):
         self.score_type = score_type
-        self.alpha = 0.5
+        self.kd_alpha = kd_alpha
         self.kd = KLDivLoss(reduction="batchmean", log_target=True)
         
     def calc(
@@ -70,7 +71,7 @@ class BiEncoderNllLoss(object):
 
         max_score, max_idxs = torch.max(softmax_scores, 1)
         
-        loss = self.alpha * bi_loss + (1 - self.alpha) * kd_loss
+        loss = self.kd_alpha * bi_loss + (1 - self.kd_alpha) * kd_loss
         
         correct_predictions_count = (max_idxs == torch.tensor(positive_idx_per_question).to(max_idxs.device)).sum()
         return loss, correct_predictions_count

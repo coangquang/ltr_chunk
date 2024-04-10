@@ -71,7 +71,8 @@ class BiTrainer():
             self.model = DataParallel(self.model)
         self.model.to(self.device)
         if self.args.BE_loss == 0.0 or self.args.BE_loss == 1.0:
-            self.criterion = BiEncoderNllLoss(score_type=self.args.BE_score)
+            self.criterion = BiEncoderNllLoss(score_type=self.args.BE_score, 
+                                              kd_alpha=self.args.kd_loss)
         else:
             self.criterion = BiEncoderDoubleNllLoss(score_type=self.args.BE_score,
                                                     alpha=self.args.BE_loss)
@@ -202,7 +203,7 @@ class BiTrainer():
             ctx_input_ids = torch.cat((p_input_ids, n_input_ids), 0)
             ctx_attn_mask = torch.cat((p_attn_mask, n_attn_mask), 0)
         else:
-            q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask, score = tuple(t.to(self.device) for t in batch)
+            q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask, scores = tuple(t.to(self.device) for t in batch)
         
         self.optimizer.zero_grad()
 
@@ -219,7 +220,7 @@ class BiTrainer():
         self.model.train()
         self.optimizer.zero_grad()
         if self.args.no_hard != 0:
-            q_input_ids, q_attn_mask, p_input_ids, p_attn_mask, n_input_ids, n_attn_mask, score = tuple(t.to(self.device) for t in batch)
+            q_input_ids, q_attn_mask, p_input_ids, p_attn_mask, n_input_ids, n_attn_mask, scores = tuple(t.to(self.device) for t in batch)
             
             
             ctx_len = n_input_ids.size()[-1]
@@ -306,7 +307,7 @@ class BiTrainer():
                     ctx_input_ids = torch.cat((p_input_ids, n_input_ids), 0)
                     ctx_attn_mask = torch.cat((p_attn_mask, n_attn_mask), 0)
                 else:
-                    q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask, score = tuple(t.to(self.device) for t in batch)
+                    q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask, scores = tuple(t.to(self.device) for t in batch)
 
                 q_vectors, ctx_vectors = self.model(q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask)
                 loss, num_correct = self.val_criterion.calc(q_vectors, ctx_vectors, scores)
