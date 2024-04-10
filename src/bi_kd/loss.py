@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from torch.nn import KLDivLoss
 
 def dot_product_scores(q_vectors, ctx_vectors):
     """
@@ -25,31 +26,52 @@ class BiEncoderNllLoss(object):
     def __init__(self,
                  score_type="dot"):
         self.score_type = score_type
+        self.alpha = 0.5
+        self.kd = KLDivLoss(reduction="batchmean", log_target=True)
         
     def calc(
         self,
         q_vectors,
-        ctx_vectors):
+        ctx_vectors,
+        kd_scores):
         """
         Computes nll loss for the given lists of question and ctx vectors.
         Return: a tuple of loss value and amount of correct predictions per batch
         """
         scores = self.get_scores(q_vectors, ctx_vectors)
-
+        kd_scores = F.log_softmax(kd_scores, dim=1)
         if len(q_vectors.size()) > 1:
             q_num = q_vectors.size(0)
+            ctx_num = ctx_vectors.size(0)
+            ctx_per_q = int(ctx_num/q_num)
+            no_hard = int(ctx_num/q_num - 1)
             scores = scores.view(q_num, -1)
+            pre_scores = torch.randn(q_num, ctx_per_q, requires_grad=True).to("cuda")
+            for i in range(q_num):
+                ctx_lst = [i]
+                ctx_lst += [x for x in range((q_num+i* no_hard),(q_num+i* no_hard+ no_hard))]
+                #subscores = self.get_scores(q_vectors[i], ctx_vectors[ctx_lst])
+                pre_scores[i] = scores[i,[ctx_lst]]
+                
+            #pre_scores = scores[:,:ctx_per_q]
+            
             positive_idx_per_question = [i for i in range(q_num)]
 
         softmax_scores = F.log_softmax(scores, dim=1)
+        pre_softmax_scores = F.log_softmax(pre_scores, dim=1)
 
-        loss = F.nll_loss(
+        bi_loss = F.nll_loss(
             softmax_scores,
             torch.tensor(positive_idx_per_question).to(softmax_scores.device),
             reduction="mean",
         )
+        
+        kd_loss = self.kd(pre_softmax_scores, kd_scores)
 
         max_score, max_idxs = torch.max(softmax_scores, 1)
+        
+        loss = self.alpha * bi_loss + (1 - self.alpha) * kd_loss
+        
         correct_predictions_count = (max_idxs == torch.tensor(positive_idx_per_question).to(max_idxs.device)).sum()
         return loss, correct_predictions_count
 

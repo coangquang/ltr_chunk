@@ -195,7 +195,7 @@ class BiTrainer():
     def step(self, batch):
         self.model.train()
         if self.args.no_hard != 0:
-            q_input_ids, q_attn_mask, p_input_ids, p_attn_mask, n_input_ids, n_attn_mask, score = tuple(t.to(self.device) for t in batch)
+            q_input_ids, q_attn_mask, p_input_ids, p_attn_mask, n_input_ids, n_attn_mask, scores = tuple(t.to(self.device) for t in batch)
             ctx_len = n_input_ids.size()[-1]
             n_input_ids = n_input_ids.view(-1,ctx_len)
             n_attn_mask = n_attn_mask.view(-1,ctx_len)
@@ -207,7 +207,7 @@ class BiTrainer():
         self.optimizer.zero_grad()
 
         q_vectors, ctx_vectors = self.model(q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask)
-        loss, num_correct = self.criterion.calc(q_vectors, ctx_vectors)
+        loss, num_correct = self.criterion.calc(q_vectors, ctx_vectors, scores)
         loss.backward()
 
         self.optimizer.step()
@@ -229,7 +229,7 @@ class BiTrainer():
             ctx_attn_mask = torch.cat((p_attn_mask, n_attn_mask), 0)
         
         else:
-            q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask, score = tuple(t.to(self.device) for t in batch)
+            q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask, scores = tuple(t.to(self.device) for t in batch)
             
         all_q_reps, all_ctx_reps = [], []
         q_rnds, ctx_rnds = [], []
@@ -256,7 +256,7 @@ class BiTrainer():
             
         all_q_reps = all_q_reps.float().detach().requires_grad_()
         all_ctx_reps = all_ctx_reps.float().detach().requires_grad_()
-        loss, num_correct = self.criterion.calc(all_q_reps, all_ctx_reps)
+        loss, num_correct = self.criterion.calc(all_q_reps, all_ctx_reps, scores)
         if self.args.gradient_accumulation_steps > 1:
             loss = loss / self.args.gradient_accumulation_steps
         loss.backward()
@@ -279,7 +279,7 @@ class BiTrainer():
             surrogate.backward()
 
        #q_vectors, ctx_vectors = self.model(q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask)
-       #loss, num_correct = self.criterion.calc(q_vectors, ctx_vectors)
+       #loss, num_correct = self.criterion.calc(q_vectors, ctx_vectors, scores)
        #loss.backward()
 
         self.optimizer.step()
@@ -299,7 +299,7 @@ class BiTrainer():
             tqdm_batch_iterator = tqdm(self.val_loader)
             for i, batch in enumerate(tqdm_batch_iterator):
                 if self.args.no_hard != 0:
-                    q_input_ids, q_attn_mask, p_input_ids, p_attn_mask, n_input_ids, n_attn_mask, score = tuple(t.to(self.device) for t in batch)
+                    q_input_ids, q_attn_mask, p_input_ids, p_attn_mask, n_input_ids, n_attn_mask, scores = tuple(t.to(self.device) for t in batch)
                     ctx_len = n_input_ids.size()[-1]
                     n_input_ids = n_input_ids.view(-1,ctx_len)
                     n_attn_mask = n_attn_mask.view(-1,ctx_len)
@@ -309,7 +309,7 @@ class BiTrainer():
                     q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask, score = tuple(t.to(self.device) for t in batch)
 
                 q_vectors, ctx_vectors = self.model(q_input_ids, q_attn_mask, ctx_input_ids, ctx_attn_mask)
-                loss, num_correct = self.val_criterion.calc(q_vectors, ctx_vectors)
+                loss, num_correct = self.val_criterion.calc(q_vectors, ctx_vectors, scores)
                 total_loss += loss.item()
                 total_correct += num_correct
 
