@@ -49,7 +49,7 @@ def build_dpr_traindata(corpus, dataset, tokenizer, q_len, ctx_len, batch_size, 
 
     Q = tokenizer.batch_encode_plus(questions, padding='max_length', truncation=True, max_length=q_len, return_tensors='pt')
     P = tokenizer.batch_encode_plus(positives, padding='max_length', truncation=True, max_length=ctx_len, return_tensors='pt')
-    scores = torch.tensor(scores, dtype=torch.long)
+    scores = torch.tensor(scores, dtype=torch.float)
     if no_hard != 0:
         N = tokenizer.batch_encode_plus(negatives, padding='max_length', truncation=True, max_length=ctx_len, return_tensors='pt')
         N_ids = N['input_ids'].view(-1,no_hard,ctx_len)
