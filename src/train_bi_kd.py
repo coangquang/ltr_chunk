@@ -52,6 +52,8 @@ def main():
                         help="Path to save the state with highest validation result.")
     parser.add_argument("--index_path", default=None, type=str,
                         help="Path to save the index")
+    parser.add_argument("--new_data", default=False, type=bool,
+                        help="To use crawl data or not")
     
     args = parser.parse_args()
     dcorpus = pd.read_csv(args.corpus_file)
