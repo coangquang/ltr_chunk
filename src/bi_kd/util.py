@@ -1,5 +1,4 @@
 import torch
-import json
 from torch import Tensor as T
 from torch.utils.data import TensorDataset, DataLoader
 from transformers import AutoTokenizer
