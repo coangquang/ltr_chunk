@@ -36,13 +36,13 @@ def build_dpr_traindata(corpus, dataset, tokenizer, q_len, ctx_len, batch_size, 
         pos_id = positive['doc_id'][positive['score'].index(max_score)]
         score = [max_score]
         pos = context_trans(corpus[pos_id], tokenizer)
-        try:
+        if len(negative['doc_id']) >= no_hard:
             negative = dataset['negatives'][i]
             neg_ids = negative['doc_id'][:no_hard]
             negs = [context_trans(corpus[j], tokenizer) for j in neg_ids]
             score += negative['score'][:no_hard]
             negatives += negs
-        except:
+        else:
             continue
         
         questions.append(dataset['query'][i])
