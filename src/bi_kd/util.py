@@ -31,19 +31,21 @@ def build_dpr_traindata(corpus, dataset, tokenizer, q_len, ctx_len, batch_size, 
     #    neg_ids = df["neg_ids"].tolist()
 
     for i in range(len(dataset)):
-        questions.append(dataset['query'][i])
         positive = dataset['positives'][i]
         max_score = max(positive['score'])
         pos_id = positive['doc_id'][positive['score'].index(max_score)]
         score = [max_score]
         pos = context_trans(corpus[pos_id], tokenizer)
-        if no_hard != 0:
+        try:
             negative = dataset['negatives'][i]
             neg_ids = negative['doc_id'][:no_hard]
             negs = [context_trans(corpus[j], tokenizer) for j in neg_ids]
             score += negative['score'][:no_hard]
             negatives += negs
+        except:
+            continue
         
+        questions.append(dataset['query'][i])
         positives.append(pos)
         scores.append(score)
 
