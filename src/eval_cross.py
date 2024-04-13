@@ -73,6 +73,10 @@ class Args:
         default=1000,
         metadata={'help': 'How many neighbors to retrieve?'}
     )
+    top_k: int = field(
+        default=1000,
+        metadata={'help': 'How many neighbors to rerank?'}
+    )
     data_path: str = field(
         default="/kaggle/input/zalo-data",
         metadata={'help': 'Path to zalo data.'}
@@ -236,12 +240,12 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, questions, faiss_ind
     all_indices = np.concatenate(all_indices, axis=0)
     return all_scores, all_indices
 
-def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, questions, corpus, retrieved_ids, batch_size = 128, max_length = 256):
+def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, questions, corpus, retrieved_ids, batch_size = 128, max_length = 256, top_k=30):
     eos = tokenizer.eos_token
     #questions = queries['tokenized_question'].tolist()
     texts = []
     for idx in range(len(questions)):
-        for j in range(30):
+        for j in range(top_k):
             texts.append(questions[idx] + eos + eos + corpus[retrieved_ids[idx][j]])
     reranked_ids = []
     rerank_scores = []
@@ -250,16 +254,16 @@ def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, questions, corpus
                             disable=len(questions) < batch_size):
         batch_retrieved_ids = retrieved_ids[start_index: start_index+batch_size]
         collated = tokenizer(
-                    texts[start_index*30: (start_index + batch_size)*30],
+                    texts[start_index*top_k: (start_index + batch_size)*top_k],
                     padding=True,
                     truncation=True,
                     max_length=max_length,
                     return_tensors="pt",
                 ).to('cuda')
         reranked_scores = reranker(collated).logits
-        reranked_scores = reranked_scores.view(-1,30).to('cpu').tolist()
+        reranked_scores = reranked_scores.view(-1,top_k).to('cpu').tolist()
         for m in range(len(reranked_scores)):
-            tuple_lst = [(batch_retrieved_ids[m][n], reranked_scores[m][n]) for n in range(30)]
+            tuple_lst = [(batch_retrieved_ids[m][n], reranked_scores[m][n]) for n in range(top_k)]
             tuple_lst.sort(key=lambda tup: tup[1], reverse=True)
             reranked_ids.append([tup[0] for tup in tuple_lst]) 
             rerank_scores.append([tup[1] for tup in tuple_lst])            
@@ -488,7 +492,7 @@ def main():
         retrieval_results.append(rst)
         retrieval_ids.append(indice)
         
-    rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, questions, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length)
+    rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, questions, corpus, retrieval_ids, args.cross_batch_size, args.cross_max_length, args.top_k)
 
     if args.bi_data:
         save_bi_data(questions, ground_ids, rerank_ids, rerank_scores, args.data_type, org_questions)
