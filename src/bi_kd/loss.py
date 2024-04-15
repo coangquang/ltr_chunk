@@ -47,7 +47,8 @@ class BiEncoderNllLoss(object):
             ctx_per_q = int(ctx_num/q_num)
             no_hard = int(ctx_num/q_num - 1)
             scores = scores.view(q_num, -1)
-            pre_scores = torch.randn(q_num, ctx_per_q, requires_grad=True).to("cuda")
+            #pre_scores = torch.randn(q_num, ctx_per_q, requires_grad=True).to("cuda")
+            pre_scores = torch.randn(q_num, ctx_per_q).to("cuda")
             for i in range(q_num):
                 ctx_lst = [i]
                 ctx_lst += [x for x in range((q_num+i* no_hard),(q_num+i* no_hard+ no_hard))]
