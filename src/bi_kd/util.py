@@ -2,6 +2,7 @@ import torch
 from torch import Tensor as T
 from torch.utils.data import TensorDataset, DataLoader
 from transformers import AutoTokenizer
+import random
 
 def get_tokenizer(model_checkpoint):
     """
@@ -43,7 +44,16 @@ def build_dpr_traindata(corpus, dataset, tokenizer, q_len, ctx_len, batch_size, 
             score += negative['score'][:no_hard]
             negatives += negs
         else:
-            continue
+            neg_ids = negative['doc_id']
+            sco = negative['score']
+            ids = [z for z in range(len(neg_ids))]
+            for u in range(no_hard-len(neg_ids)):
+                rand_idx = random.choice(ids)
+                neg_ids.append(negative['doc_id'][rand_idx])
+                sco.append(negative['score'][rand_idx])
+            negs = [context_trans(corpus[j], tokenizer) for j in neg_ids]
+            score += sco
+            negatives += negs
         
         questions.append(dataset['query'][i])
         positives.append(pos)
