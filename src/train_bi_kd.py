@@ -15,6 +15,8 @@ def main():
                         help="Directory of the data folder (containing train, test, val, ttrain, ttest, tval file)")
     parser.add_argument("--kd_data_dir", default=None, type=str,
                         help="Directory of the kd data folder")
+    parser.add_argument("--resume_training_from", default=None, type=str,
+                        help="Continue training from...")
     parser.add_argument("--BE_checkpoint", default="vinai/phobert-base-v2", type=str,
                         help="Name or directory of pretrained model for encoder")
     parser.add_argument("--BE_representation", default='cls', type=str,

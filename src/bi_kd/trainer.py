@@ -64,8 +64,11 @@ class BiTrainer():
         self.model = SharedBiEncoder(model_checkpoint=self.args.BE_checkpoint,
                                     representation=self.args.BE_representation,
                                     fixed=self.args.bi_fixed)
-        #if self.args.load_path is not None:
-        #    self.model.load_state_dict(torch.load(self.args.load_path))
+        if self.args.resume_training_from:
+            old_checkpoint = torch.load(self.args.resume_training_from)
+            self.model.load_state_dict(old_checkpoint['model'])
+            print("Resume training. Trained", old_checkpoint['epoch'], 'epochs.')
+            
         if self.parallel:
             print("Parallel Training")
             self.model = DataParallel(self.model)
@@ -81,6 +84,10 @@ class BiTrainer():
         self.optimizer = AdamW(self.model.parameters(), lr=args.BE_lr) 
         self.scheduler = WarmupLinearSchedule(self.optimizer, 0.1 * len(self.train_loader) * self.args.BE_num_epochs, len(self.train_loader) * self.args.BE_num_epochs)
         self.epoch = 0
+        if self.args.resume_training_from:
+            self.optimizer.load_state_dict(old_checkpoint['optimizer'])
+            self.scheduler.load_state_dict(old_checkpoint['scheduler'])
+            self.epoch = old_checkpoint['epoch']
         self.patience_counter = 0
         self.best_val_acc = 0.0
         self.epochs_count = []
@@ -139,6 +146,20 @@ class BiTrainer():
                 else:
                     self.model.encoder.save(self.args.final_path)
                     #torch.save(self.model.state_dict(), self.args.final_path)
+            if self.parallel:
+                checkpoint = { 
+                    'epoch': self.epoch,
+                    'model': self.model.module.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                    'scheduler': self.scheduler.state_dict()}
+                torch.save(checkpoint, 'last_checkpoint.pth')
+            else:
+                checkpoint = { 
+                    'epoch': self.epoch,
+                    'model': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                    'scheduler': self.scheduler.state_dict()}
+                torch.save(checkpoint, 'last_checkpoint.pth')
             
         # Plotting of the loss curves for the train and validation sets.
         plt.figure()
