@@ -53,6 +53,8 @@ def main():
                         help="To use crawl data or not")
     parser.add_argument("--all_data", default=False, type=bool,
                         help="To use all positives or not")
+    parser.add_argument("--resume_training_from", default=None, type=str,
+                        help="Continue training from...")
     
     args = parser.parse_args()
     dcorpus = pd.read_csv(args.corpus_file)
