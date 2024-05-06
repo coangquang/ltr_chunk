@@ -61,6 +61,10 @@ class Args:
         default="/kaggle/input/zalo-data",
         metadata={'help': 'Path to zalo data.'}
     )
+    corpus_file: str = field(
+        default="/kaggle/input/zalo-data",
+        metadata={'help': 'Path to zalo corpus.'}
+    )
     data_type: str = field(
         default="test",
         metadata={'help': 'Type data to test'}
@@ -370,7 +374,7 @@ def main():
           
     else:
         test_data = pd.read_csv(args.data_path + "/ttest.csv")
-    corpus_data = pd.read_csv(args.data_path + "/zalo_corpus.csv")
+    corpus_data = pd.read_csv(args.corpus_file)
     #dcorpus = pd.DataFrame(corpus_data)
     #pandarallel.initialize(progress_bar=True, use_memory_fs=False, nb_workers=12)
     #dcorpus["full_text"] = dcorpus.parallel_apply(concat_str, axis=1)
