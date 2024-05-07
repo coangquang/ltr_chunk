@@ -16,6 +16,7 @@ class Reranker(nn.Module):
         super().__init__()
         self.hf_model = hf_model
         self.args = args
+        self._keys_to_ignore_on_save = None
 
         self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
         #self.contrastive = CrossEncoderNllLoss()
