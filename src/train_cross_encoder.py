@@ -88,7 +88,7 @@ def main():
         trainer.save_metrics("eval", metrics)
 
     if args.do_train:
-        train_result = trainer.train()
+        train_result = trainer.train(resume_from_checkpoint= args.resume_from_checkpoint)
         trainer.save_model()
 
         metrics = train_result.metrics
