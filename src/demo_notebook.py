@@ -262,7 +262,10 @@ def main():
         #retrieval_ids = indice
         return chunks[0]
 
-    print(greet(args.input_query))
+    chunks = greet(args.input_query)
+    for chunk in chunks:
+        print()
+        print(chunk)
     #demo = gr.Interface(fn=greet, inputs="text", outputs="text")
 
     #demo.launch(share=True)
