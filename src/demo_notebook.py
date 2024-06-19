@@ -260,7 +260,7 @@ def main():
                 rst.append(temp)
         #retrieval_results = rst
         #retrieval_ids = indice
-        return chunks[0]
+        return chunks
 
     chunks = greet(args.input_query)
     for chunk in chunks:
