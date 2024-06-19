@@ -68,6 +68,12 @@ class Args:
         default=1000,
         metadata={'help': 'How many neighbors to rerank?'}
     )
+    
+    batch_size: int = field(
+        default=128,
+        metadata={'help': 'Inference batch size.'}
+    )
+    
     data_path: str = field(
         default="/kaggle/input/zalo-data",
         metadata={'help': 'Path to zalo data.'}
@@ -99,6 +105,9 @@ class Args:
         default="embeddings.memmap",
         metadata={'help': 'Path to save embeddings.'}
     )
+    
+    
+    
 
 def index(model: SharedBiEncoder, tokenizer:AutoTokenizer, corpus, batch_size: int = 16, max_length: int=512, index_factory: str = "Flat", save_path: str = None, save_embedding: bool = False, load_embedding: bool = False):
     """
