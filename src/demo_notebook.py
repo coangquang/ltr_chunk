@@ -263,9 +263,10 @@ def main():
         return chunks
 
     chunks = greet(args.input_query)
-    for chunk in chunks:
+    for i in range(len(chunks)):
         print()
-        print(chunk)
+        print("Chunk",i+1,)
+        print(chunks[i])
     #demo = gr.Interface(fn=greet, inputs="text", outputs="text")
 
     #demo.launch(share=True)
