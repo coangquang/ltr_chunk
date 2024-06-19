@@ -1,5 +1,5 @@
 import argparse
-from system import Retriever
+from src.system_cross import Retriever
 
 
 def main():
