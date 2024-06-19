@@ -56,14 +56,6 @@ class Args:
         default=256,
         metadata={'help': 'Max cross length.'}
     )
-    cross_batch_size: int = field(
-        default=32,
-        metadata={'help': 'Inference batch size.'}
-    )
-    batch_size: int = field(
-        default=128,
-        metadata={'help': 'Inference batch size.'}
-    )
     index_factory: str = field(
         default="Flat",
         metadata={'help': 'Faiss index factory.'}
@@ -92,11 +84,6 @@ class Args:
     data_file: str = field(
         default=None,
         metadata={'help': 'Path to evaluated data.'}
-    )
-    
-    bi_data: bool = field(
-        default=False,
-        metadata={'help': 'Data for bi-encoder training'}
     )
     
     save_embedding: bool = field(
