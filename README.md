@@ -1,11 +1,8 @@
-# legal_retrieval
-Source code for Zalo AI 2021
+# ltr_chunk
+Source code for my Thesis - 2023.2 - Building an Efficient Retrieval System for Vietnamese Legal Domain
  
-## Data
-Raw and processed data is in ``\data``
-
-## Pretrained
-Pretrained model is in ``\pretrained``
+## Data and Pretrained Models
+Raw, data and trained models are upload on [OneDrive](https://husteduvn-my.sharepoint.com/:f:/g/personal/quang_nn204925_sis_hust_edu_vn/EmZq2jSVzSRDgPGb4gYdE8EBz9CUErdF-h2W00Wa1qWhWA?e=y5zmw9)
 
 ## Run code
-We run the code in Kaggle, follow notebooks in ``\notebooks`` to run
+T ran the code in Kaggle, I recommend you to upload the notebooks in ``\kaggle_notebooks`` folder and relevant dataset and trained models to Kaggle to run.

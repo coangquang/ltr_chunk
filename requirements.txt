@@ -1,0 +1,9 @@
+transformers==4.15.0
+faiss-gpu==1.7.3
+pytorch==1.12.1
+datasets==2.0.0
+pyvi
+pytrec_eval
+rank_bm25
+accelerate
+wandb
