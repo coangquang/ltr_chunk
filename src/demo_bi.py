@@ -258,7 +258,7 @@ def main():
             chunk = {}
             chunk['law_id'] = corpus_data['law_id'][x]
             chunk['title'] = corpus_data['title'][x]
-            chunk['article_id'] = corpus_data['article_id'][x]
+            chunk['article_id'] = int(corpus_data['article_id'][x])
             chunk['text'] = corpus_data['text'][x]
             chunks.append(chunk)
         #if temp not in rst:
@@ -279,7 +279,7 @@ def main():
     #demo = gr.Interface(fn=greet, inputs="text", outputs="text")
 
     print(rst)
-    with open("result.json", 'w') as f:
+    with open("result-bi.json", 'w') as f:
         json.dump(rst, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
