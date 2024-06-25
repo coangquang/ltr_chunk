@@ -278,7 +278,12 @@ def main():
     #    print(chunks[i])
     #demo = gr.Interface(fn=greet, inputs="text", outputs="text")
 
-    print(rst)
+    print("Question:", rst['question'])
+    print()
+    print("Top relevant chunks:")
+    for chnk in rst['top_relevant_chunks']:
+        print(chnk)
+        print()
     with open("result-bi.json", 'w') as f:
         json.dump(rst, f, ensure_ascii=False, indent=4)
 
