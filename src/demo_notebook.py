@@ -251,26 +251,36 @@ def main():
         )
         indice = indices[0]
         indice = indice[indice != -1].tolist()
-        rst = []
+        #rst = []
         chunks = []
         for x in indice:
-            temp = corpus_data['law_id'][x] + "_" + str(corpus_data['article_id'][x])
-            chunks.append(corpus_data['text'][x])
-            if temp not in rst:
-                rst.append(temp)
+            #temp = corpus_data['law_id'][x] + "_" + str(corpus_data['article_id'][x])
+            chunk = {}
+            chunk['law_id'] = corpus_data['law_id'][x]
+            chunk['title'] = corpus_data['title'][x]
+            chunk['article_id'] = corpus_data['article_id'][x]
+            chunk['text'] = corpus_data['text'][x]
+            chunks.append(chunk)
+        #if temp not in rst:
+        #    rst.append(temp)
         #retrieval_results = rst
         #retrieval_ids = indice
-        return rst, chunks
+        return chunks
 
-    rst, chunks = greet(args.input_query)
-    print(rst)
-    for i in range(len(chunks)):
-        print()
-        print("Chunk",i+1,)
-        print(chunks[i])
+    chunks = greet(args.input_query)
+    #print(rst)
+    rst = {}
+    rst['question'] = args.input_query
+    rst['top_relevant_chunks'] = chunks
+    #for i in range(len(chunks)):
+    #    print()
+    #    print("Chunk",i+1,)
+    #    print(chunks[i])
     #demo = gr.Interface(fn=greet, inputs="text", outputs="text")
 
-    #demo.launch(share=True)
+    print(rst)
+    with open("result.json", 'w') as f:
+        json.dump(rst, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
     main()
