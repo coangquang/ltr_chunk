@@ -253,12 +253,14 @@ def main():
         indice = indice[indice != -1].tolist()
         #rst = []
         chunks = []
-        for x in indice:
-            #temp = corpus_data['law_id'][x] + "_" + str(corpus_data['article_id'][x])
+        for i in range(args.k):
+            x = indice[i]
             chunk = {}
+            chunk['bi_score'] = float(scores[0][i])
+            chunk['id'] = int(x)
             chunk['law_id'] = corpus_data['law_id'][x]
-            chunk['title'] = corpus_data['title'][x]
             chunk['article_id'] = int(corpus_data['article_id'][x])
+            chunk['title'] = corpus_data['title'][x]
             chunk['text'] = corpus_data['text'][x]
             chunks.append(chunk)
         #if temp not in rst:
