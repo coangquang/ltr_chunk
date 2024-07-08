@@ -359,7 +359,7 @@ def app():
             ans, timee = bi_answer(user_input)
         else:
             ans, timee = cross_answer(user_input)
-        st.write("Retrieval Time:", timee, "s.")
+        #st.write("Retrieval Time:", timee, "s.")
         st.write(ans)
 
     
