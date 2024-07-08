@@ -57,6 +57,10 @@ class Args:
         default=30,
         metadata={'help': 'How many neighbors to retrieve?'}
     )
+    top_k: int = field(
+        default=10,
+        metadata={'help': 'How many neighbors to retrieve?'}
+    )
     
     batch_size: int = field(
         default=1024,
@@ -274,6 +278,7 @@ def app():
         "Enter your legal query/question below and click the button to submit."
     )
     def bi_answer(org_question):
+        start = time.time()
         question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
         scores, indices = search(
             model=model, 
@@ -283,8 +288,10 @@ def app():
             k=args.k, 
             max_length=args.max_query_length
         )
+        
         indice = indices[0]
         score = scores[0]
+        timee = time.time - start
         chunks = []
         for i in range(args.k):
             x = indice[i]
@@ -303,9 +310,10 @@ def app():
 
         with open("result-bi.json", 'w') as f:
             json.dump(rst, f, ensure_ascii=False, indent=4)
-        return rst
+        return rst, timee
     
     def cross_answer(org_question, k=30, top_k=10):
+        start = time.time()
         question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
         scores, indices = search(
             model=model, 
@@ -320,6 +328,7 @@ def app():
         retrieval_ids = indice
         
         rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, question, corpus, retrieval_ids, 256, top_k)
+        timee = time.time -start
         indice = indice.tolist()
         chunks = []
         for i in range(top_k):
@@ -340,15 +349,17 @@ def app():
 
         with open("result-cross.json", 'w') as f:
             json.dump(rst, f, ensure_ascii=False, indent=4)
+        return rst, timee
 
     with st.form("my_form"):
         submit = st.form_submit_button(label="Search")
 
     if submit:
         if option == 'Bi-encoder only':
-            ans = bi_answer(user_input)
+            ans, timee = bi_answer(user_input)
         else:
-            ans = cross_answer(user_input)
+            ans, timee = cross_answer(user_input)
+        st.write("Retrieval Time:", timee, "s.")
         st.write(ans)
 
     
