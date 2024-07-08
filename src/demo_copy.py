@@ -328,7 +328,6 @@ def app():
         retrieval_ids = indice
         
         rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, question, corpus, retrieval_ids, 256, top_k)
-        timee = time.time() -start
         indice = indice.tolist()
         chunks = []
         for i in range(top_k):
@@ -349,6 +348,7 @@ def app():
 
         with open("result-cross.json", 'w') as f:
             json.dump(rst, f, ensure_ascii=False, indent=4)
+        timee = time.time() -start
         return rst, timee
 
     with st.form("my_form"):
