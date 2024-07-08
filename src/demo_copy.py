@@ -239,22 +239,6 @@ def app():
     user_input = st.text_area(
         "Enter your legal query/question below and click the button to submit."
     )
-    #prefix='Create high resolution realistic image of '
-    #user_input=prefix+userinput
-
-    with st.form("my_form"):
-        submit = st.form_submit_button(label="Search")
-
-    if submit:
-        ans = greet(user_input)
-        st.text(ans)
-        #image = pipe(user_input,guidance_scale=8,num_inference_steps=100).images[0]
-        #image.save(f"TexttoImage.png")
-#,guidance_scale=8
-        #st.image(image)
-    
-    
-
     def greet(org_question):
         question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
         scores, indices = search(
@@ -278,10 +262,14 @@ def app():
         #retrieval_ids = indice
         return chunks[0]
 
+    with st.form("my_form"):
+        submit = st.form_submit_button(label="Search")
 
-    #demo = gr.Interface(fn=greet, inputs="text", outputs="text")
+    if submit:
+        ans = greet(user_input)
+        st.text(ans)
 
-    #demo.launch(share=True)
+    
 
 if __name__ == "__main__":
     app()
