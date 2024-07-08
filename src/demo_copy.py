@@ -68,7 +68,7 @@ class Args:
         metadata={'help': 'Save embeddings in memmap at save_dir?'}
     )
     load_embedding: str = field(
-        default='',
+        default='/kaggle/input/add3-kd8/embeddings.memmap',
         metadata={'help': 'Path to saved embeddings.'}
     )
     
