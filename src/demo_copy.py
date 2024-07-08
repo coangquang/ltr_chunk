@@ -250,24 +250,33 @@ def app():
             max_length=args.max_query_length
         )
         indice = indices[0]
-        indice = indice[indice != -1].tolist()
-        rst = []
+        score = scores[0]
         chunks = []
-        for x in indice:
-            temp = corpus_data['law_id'][x] + "_" + str(corpus_data['article_id'][x])
-            chunks.append(corpus_data['text'][x])
-            if temp not in rst:
-                rst.append(temp)
-        #retrieval_results = rst
-        #retrieval_ids = indice
-        return chunks[0]
+        for i in range(args.k):
+            x = indice[i]
+            chunk = {}
+            chunk['bi_score'] = float(score[i])
+            chunk['id'] = int(x)
+            chunk['law_id'] = corpus_data['law_id'][x]
+            chunk['article_id'] = int(corpus_data['article_id'][x])
+            chunk['title'] = corpus_data['title'][x]
+            chunk['text'] = corpus_data['text'][x]
+            chunks.append(chunk)
+        
+        rst = {}
+        rst['question'] = org_question
+        rst['top_relevant_chunks'] = chunks
+
+        with open("result-bi.json", 'w') as f:
+            json.dump(rst, f, ensure_ascii=False, indent=4)
+        return rst
 
     with st.form("my_form"):
         submit = st.form_submit_button(label="Search")
 
     if submit:
         ans = greet(user_input)
-        st.text(ans)
+        st.write(ans)
 
     
 
