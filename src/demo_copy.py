@@ -12,6 +12,7 @@ from transformers import HfArgumentParser
 from transformers import AutoTokenizer
 from bi.model import SharedBiEncoder
 from bi.preprocess import preprocess_question
+from cross_rerank.model import RerankerForInference
 from pyvi.ViTokenizer import tokenize
 #import gradio as gr
 import streamlit as st
@@ -22,6 +23,10 @@ logger = logging.getLogger(__name__)
 class Args:
     encoder: str = field(
         default="/kaggle/input/add3-kd8",
+        metadata={'help': 'The encoder name or path.'}
+    )
+    cross_checkpoint: str = field(
+        default="/kaggle/input/add3-cross1750",
         metadata={'help': 'The encoder name or path.'}
     )
     tokenizer: str = field(
@@ -210,6 +215,27 @@ def search(model: SharedBiEncoder, tokenizer:AutoTokenizer, question, faiss_inde
     all_indices = np.concatenate(all_indices, axis=0)
     return all_scores, all_indices
 
+def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, question, corpus, retrieved_ids, max_length = 256, top_k=30):
+    eos = tokenizer.eos_token
+    texts = []
+    for j in range(top_k):
+        texts.append(question + eos + eos + corpus[retrieved_ids[j]])
+    collated = tokenizer(
+                texts,
+                padding=True,
+                truncation=True,
+                max_length=max_length,
+                return_tensors="pt",
+            ).to('cuda')
+    reranked_scores = reranker(collated).logits
+    reranked_scores = reranked_scores.view(-1,top_k).to('cpu').tolist()
+    tuple_lst = [(retrieved_ids[n], reranked_scores[0][n]) for n in range(top_k)]
+    tuple_lst.sort(key=lambda tup: tup[1], reverse=True)
+    reranked_ids = [tup[0] for tup in tuple_lst]
+    rerank_scores = [tup[1] for tup in tuple_lst]            
+            
+    return reranked_ids, rerank_scores
+
                 
 def app():
     parser = HfArgumentParser([Args])
@@ -233,13 +259,21 @@ def app():
         save_embedding=args.save_embedding,
         load_embedding=args.load_embedding
     )
+    reranker = RerankerForInference(model_checkpoint=args.cross_checkpoint)
+    reranker.to('cuda')
+    reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_checkpoint)
     
-    st.header("Bi-encoder Retriever Web App")
+    st.header("Vietnamese Legal Retriever Web App")
     st.subheader("Powered by NguyenNhatQuang")
+    option = st.selectbox(
+    "Select your retrieval system?",
+    ("Bi-encoder only", "Bi-encoder + Cross-encoder Re-ranker"))
+
+    st.write("System selected:", option)
     user_input = st.text_area(
         "Enter your legal query/question below and click the button to submit."
     )
-    def greet(org_question):
+    def bi_answer(org_question):
         question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
         scores, indices = search(
             model=model, 
@@ -270,12 +304,51 @@ def app():
         with open("result-bi.json", 'w') as f:
             json.dump(rst, f, ensure_ascii=False, indent=4)
         return rst
+    
+    def cross_answer(org_question, k=30, top_k=10):
+        question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
+        scores, indices = search(
+            model=model, 
+            tokenizer=tokenizer,
+            question=question, 
+            faiss_index=faiss_index, 
+            k=k, 
+            max_length=256
+        )
+        indice = indices[0]
+        score = scores[0]
+        retrieval_ids = indice
+        
+        rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, question, corpus, retrieval_ids, 256, top_k)
+        indice = indice.tolist()
+        chunks = []
+        for i in range(top_k):
+            x = rerank_ids[i]
+            chunk = {}
+            chunk['rerank_score'] = float(rerank_scores[i])
+            chunk['bi_score'] = float(score[indice.index(x)])
+            chunk['id'] = int(x)
+            chunk['law_id'] = corpus_data['law_id'][x]
+            chunk['article_id'] = int(corpus_data['article_id'][x])
+            chunk['title'] = corpus_data['title'][x]
+            chunk['text'] = corpus_data['text'][x]
+            chunks.append(chunk)
+        
+        rst = {}
+        rst['question'] = org_question
+        rst['top_relevant_chunks'] = chunks
+
+        with open("result-cross.json", 'w') as f:
+            json.dump(rst, f, ensure_ascii=False, indent=4)
 
     with st.form("my_form"):
         submit = st.form_submit_button(label="Search")
 
     if submit:
-        ans = greet(user_input)
+        if option == 'Bi-encoder only':
+            ans = bi_answer(user_input)
+        else:
+            ans = cross_answer(user_input)
         st.write(ans)
 
     
