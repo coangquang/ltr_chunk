@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Args:
     encoder: str = field(
-        default="vinai/phobert-base-v2",
+        default="/kaggle/input/add3-kd8",
         metadata={'help': 'The encoder name or path.'}
     )
     tokenizer: str = field(
@@ -49,17 +49,17 @@ class Args:
         metadata={'help': 'Faiss index factory.'}
     )
     k: int = field(
-        default=1000,
+        default=30,
         metadata={'help': 'How many neighbors to retrieve?'}
     )
     
     batch_size: int = field(
-        default=128,
+        default=1024,
         metadata={'help': 'Inference batch size.'}
     )
     
     corpus_file: str = field(
-        default="/kaggle/input/zalo-data",
+        default="/kaggle/input/zalo-data/zalo_corpus.csv",
         metadata={'help': 'Path to zalo corpus.'}
     )
     
