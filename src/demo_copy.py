@@ -268,9 +268,9 @@ def app():
     reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_checkpoint)
     
     st.header("Vietnamese Legal Retriever Web App")
-    st.subheader("Powered by NguyenNhatQuang")
+    #st.subheader("")
     option = st.selectbox(
-    "Select your retrieval system?",
+    "Select your retrieval system",
     ("Bi-encoder only", "Bi-encoder + Cross-encoder Re-ranker"))
 
     st.write("System selected:", option)
