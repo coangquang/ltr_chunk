@@ -291,7 +291,7 @@ def app():
         
         indice = indices[0]
         score = scores[0]
-        timee = time.time - start
+        timee = time.time() - start
         chunks = []
         for i in range(args.k):
             x = indice[i]
@@ -328,7 +328,7 @@ def app():
         retrieval_ids = indice
         
         rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, question, corpus, retrieval_ids, 256, top_k)
-        timee = time.time -start
+        timee = time.time() -start
         indice = indice.tolist()
         chunks = []
         for i in range(top_k):
