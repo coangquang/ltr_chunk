@@ -240,32 +240,55 @@ def rerank(reranker: SharedBiEncoder, tokenizer:AutoTokenizer, question, corpus,
             
     return reranked_ids, rerank_scores
 
-                
+parser = HfArgumentParser([Args])
+args: Args = parser.parse_args_into_dataclasses()[0]
+print(args)
+model = SharedBiEncoder(model_checkpoint=args.encoder,
+                        representation=args.sentence_pooling_method,
+                        fixed=True)
+model.to('cuda')
+tokenizer = AutoTokenizer.from_pretrained(args.tokenizer if args.tokenizer else args.encoder)
+corpus_data = pd.read_csv(args.corpus_file)
+corpus = corpus_data['tokenized_text'].tolist()
+faiss_index = index(
+    model=model, 
+    tokenizer=tokenizer,
+    corpus=corpus, 
+    batch_size=args.batch_size,
+    max_length=args.max_passage_length,
+    index_factory=args.index_factory,
+    save_path=args.save_path,
+    save_embedding=args.save_embedding,
+    load_embedding=args.load_embedding
+)
+reranker = RerankerForInference(model_checkpoint=args.cross_checkpoint)
+reranker.to('cuda')
+reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_checkpoint)             
 def app():
-    parser = HfArgumentParser([Args])
-    args: Args = parser.parse_args_into_dataclasses()[0]
-    print(args)
-    model = SharedBiEncoder(model_checkpoint=args.encoder,
-                            representation=args.sentence_pooling_method,
-                            fixed=True)
-    model.to('cuda')
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer if args.tokenizer else args.encoder)
-    corpus_data = pd.read_csv(args.corpus_file)
-    corpus = corpus_data['tokenized_text'].tolist()
-    faiss_index = index(
-        model=model, 
-        tokenizer=tokenizer,
-        corpus=corpus, 
-        batch_size=args.batch_size,
-        max_length=args.max_passage_length,
-        index_factory=args.index_factory,
-        save_path=args.save_path,
-        save_embedding=args.save_embedding,
-        load_embedding=args.load_embedding
-    )
-    reranker = RerankerForInference(model_checkpoint=args.cross_checkpoint)
-    reranker.to('cuda')
-    reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_checkpoint)
+    #parser = HfArgumentParser([Args])
+    #args: Args = parser.parse_args_into_dataclasses()[0]
+    #print(args)
+    #model = SharedBiEncoder(model_checkpoint=args.encoder,
+    #                        representation=args.sentence_pooling_method,
+    #                        fixed=True)
+    #model.to('cuda')
+    #tokenizer = AutoTokenizer.from_pretrained(args.tokenizer if args.tokenizer else args.encoder)
+    #corpus_data = pd.read_csv(args.corpus_file)
+    #corpus = corpus_data['tokenized_text'].tolist()
+    #faiss_index = index(
+    #    model=model, 
+    #    tokenizer=tokenizer,
+    #    corpus=corpus, 
+    #    batch_size=args.batch_size,
+    #    max_length=args.max_passage_length,
+    #    index_factory=args.index_factory,
+    #    save_path=args.save_path,
+    #    save_embedding=args.save_embedding,
+    #    load_embedding=args.load_embedding
+    #)
+    #reranker = RerankerForInference(model_checkpoint=args.cross_checkpoint)
+    #reranker.to('cuda')
+    #reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_checkpoint)
     
     st.header("Vietnamese Legal Retriever Web App")
     #st.subheader("")
