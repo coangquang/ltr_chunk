@@ -263,7 +263,82 @@ faiss_index = index(
 )
 reranker = RerankerForInference(model_checkpoint=args.cross_checkpoint)
 reranker.to('cuda')
-reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_checkpoint)             
+reranker_tokenizer = AutoTokenizer.from_pretrained(args.cross_checkpoint)     
+
+def bi_answer(org_question):
+    start = time.time()
+    question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
+    scores, indices = search(
+        model=model, 
+        tokenizer=tokenizer,
+        question=question, 
+        faiss_index=faiss_index, 
+        k=args.k, 
+        max_length=args.max_query_length
+    )
+        
+    indice = indices[0]
+    score = scores[0]
+    timee = time.time() - start
+    chunks = []
+    for i in range(args.k):
+        x = indice[i]
+        chunk = {}
+        chunk['bi_score'] = float(score[i])
+        chunk['id'] = int(x)
+        chunk['law_id'] = corpus_data['law_id'][x]
+        chunk['article_id'] = int(corpus_data['article_id'][x])
+        chunk['title'] = corpus_data['title'][x]
+        chunk['text'] = corpus_data['text'][x]
+        chunks.append(chunk)
+        
+    rst = {}
+    rst['question'] = org_question
+    rst['top_relevant_chunks'] = chunks
+
+    with open("result-bi.json", 'w') as f:
+        json.dump(rst, f, ensure_ascii=False, indent=4)
+    return rst, timee
+    
+def cross_answer(org_question, k=30, top_k=10):
+    start = time.time()
+    question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
+    scores, indices = search(
+        model=model, 
+        tokenizer=tokenizer,
+        question=question, 
+        faiss_index=faiss_index, 
+        k=k, 
+        max_length=256
+    )
+    indice = indices[0]
+    score = scores[0]
+    retrieval_ids = indice
+        
+    rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, question, corpus, retrieval_ids, 256, top_k)
+    indice = indice.tolist()
+    chunks = []
+    for i in range(top_k):
+        x = rerank_ids[i]
+        chunk = {}
+        chunk['rerank_score'] = float(rerank_scores[i])
+        chunk['bi_score'] = float(score[indice.index(x)])
+        chunk['id'] = int(x)
+        chunk['law_id'] = corpus_data['law_id'][x]
+        chunk['article_id'] = int(corpus_data['article_id'][x])
+        chunk['title'] = corpus_data['title'][x]
+        chunk['text'] = corpus_data['text'][x]
+        chunks.append(chunk)
+        
+    rst = {}
+    rst['question'] = org_question
+    rst['top_relevant_chunks'] = chunks
+
+    with open("result-cross.json", 'w') as f:
+        json.dump(rst, f, ensure_ascii=False, indent=4)
+    timee = time.time() -start
+    return rst, timee
+            
 def app():
     #parser = HfArgumentParser([Args])
     #args: Args = parser.parse_args_into_dataclasses()[0]
@@ -300,79 +375,6 @@ def app():
     user_input = st.text_area(
         "Enter your legal query/question below and click the button to submit."
     )
-    def bi_answer(org_question):
-        start = time.time()
-        question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
-        scores, indices = search(
-            model=model, 
-            tokenizer=tokenizer,
-            question=question, 
-            faiss_index=faiss_index, 
-            k=args.k, 
-            max_length=args.max_query_length
-        )
-        
-        indice = indices[0]
-        score = scores[0]
-        timee = time.time() - start
-        chunks = []
-        for i in range(args.k):
-            x = indice[i]
-            chunk = {}
-            chunk['bi_score'] = float(score[i])
-            chunk['id'] = int(x)
-            chunk['law_id'] = corpus_data['law_id'][x]
-            chunk['article_id'] = int(corpus_data['article_id'][x])
-            chunk['title'] = corpus_data['title'][x]
-            chunk['text'] = corpus_data['text'][x]
-            chunks.append(chunk)
-        
-        rst = {}
-        rst['question'] = org_question
-        rst['top_relevant_chunks'] = chunks
-
-        with open("result-bi.json", 'w') as f:
-            json.dump(rst, f, ensure_ascii=False, indent=4)
-        return rst, timee
-    
-    def cross_answer(org_question, k=30, top_k=10):
-        start = time.time()
-        question = tokenize(preprocess_question(org_question, remove_end_phrase=False))
-        scores, indices = search(
-            model=model, 
-            tokenizer=tokenizer,
-            question=question, 
-            faiss_index=faiss_index, 
-            k=k, 
-            max_length=256
-        )
-        indice = indices[0]
-        score = scores[0]
-        retrieval_ids = indice
-        
-        rerank_ids, rerank_scores = rerank(reranker, reranker_tokenizer, question, corpus, retrieval_ids, 256, top_k)
-        indice = indice.tolist()
-        chunks = []
-        for i in range(top_k):
-            x = rerank_ids[i]
-            chunk = {}
-            chunk['rerank_score'] = float(rerank_scores[i])
-            chunk['bi_score'] = float(score[indice.index(x)])
-            chunk['id'] = int(x)
-            chunk['law_id'] = corpus_data['law_id'][x]
-            chunk['article_id'] = int(corpus_data['article_id'][x])
-            chunk['title'] = corpus_data['title'][x]
-            chunk['text'] = corpus_data['text'][x]
-            chunks.append(chunk)
-        
-        rst = {}
-        rst['question'] = org_question
-        rst['top_relevant_chunks'] = chunks
-
-        with open("result-cross.json", 'w') as f:
-            json.dump(rst, f, ensure_ascii=False, indent=4)
-        timee = time.time() -start
-        return rst, timee
 
     with st.form("my_form"):
         submit = st.form_submit_button(label="Search")
